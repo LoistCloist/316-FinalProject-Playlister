@@ -9,7 +9,7 @@ const playlistSchema = new Schema(
         id: { type: Number, required: true },
         name: { type: String, required: true },
         ownerEmail: { type: String, required: true },
-        songs: [{ type: String, trim: true}]
+        songs: [{ type: String, trim: true, required: true}]
     },
     { timestamps: true }
 )
