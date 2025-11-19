@@ -2,6 +2,35 @@ const auth = require('../auth')
 const db = require('../db')
 const bcrypt = require('bcryptjs')
 
+getLoggedIn = async (req, res) => {
+    try {
+        let userId = auth.verifyUser(req);
+        console.log(`userId from token: ${userId}`)
+        if (!userId) {
+            console.log("No userId, returning loggedIn: false");
+            return res.status(200).json({
+                loggedIn: false,
+                user: null,
+                errorMessage: "No userId"
+            })
+        }
+
+        const loggedInUser = await User.findOne({ _id: userId });
+
+        return res.status(200).json({
+            loggedIn: true,
+            user: {
+                firstName: loggedInUser.firstName,
+                lastName: loggedInUser.lastName,
+                email: loggedInUser.email
+            }
+        })
+    } catch (err) {
+        console.log("err: " + err);
+        res.json(false);
+    }
+}
+
 registerUser = async (req, res) => {
     console.log("NOW REGISTERING USER IN BACKEND")
     try {
@@ -71,6 +100,63 @@ registerUser = async (req, res) => {
         console.error("Error in registered User: ", err);
         res.status(500).json({ errorMessage: "Server error: " + err.message });
     }
+}
+
+loginUser = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res
+                    .status(400)
+                    .json({ error: "Please enter all required fields."});
+        }
+
+        const existingUser = await User.findOne({ email: email });
+        console.log("existingUser: " + existingUser);
+        if (!existingUser) {
+            return res
+                    .status(401)
+                    .json({
+                        errorMessage: "Wrong email or password provided or user does not exist."
+                    })
+        }
+        const passwordCorrect = await bcrypt.compare(password, existingUser.passwordHash);
+        if (!passwordCorrect) {
+            return res
+                    .status(401)
+                    .json({
+                        errorMessage: "Wrong email or password provided."
+                    })
+        }
+
+        // LOGIN USER
+        const token = auth.signToken(existingUser._id);
+        
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: true
+        }).status(200).json({
+            success: true,
+            user: {
+                firstName: existingUser.firstName,
+                lastName: existingUser.lastName,
+                email: existingUser.email
+            }
+        })
+    } catch (err) {
+        console.error(err);
+        res.status(500).send();
+    }
+}
+
+logoutUser = async (req, res) => {
+    res.cookie("token", "", {
+        httpOnly: true,
+        expires: new Date(0),
+        secure: true,
+        sameSite: "none"
+    }).send();
 }
 
 module.exports = {
