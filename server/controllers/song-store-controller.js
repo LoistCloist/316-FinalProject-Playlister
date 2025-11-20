@@ -58,6 +58,45 @@ getTargetSongs = async (req, res) => {
     })
 }
 
+getSongById = async (req, res) => {
+    if(auth.verifyUser(req) === null){
+        return res.status(400).json({
+            errorMessages: 'UNAUTHORIZED'
+        })
+    }
+    song = await Song.findOne({ songId: req.params.id})
+    if (!song) {
+        return res.status(404).json({ errorMessage: "Song does not exist!"})
+    }
+    return res.status(200).json({ success: true, song: song});
+}
+
+editSongById = async (req, res) => {
+    if (auth.verifyUser(req) === null){
+        return res.status(400).json({
+            errorMessages: 'UNAUTHORIZED'
+        })
+    }
+    const { title, artist, year, youtubeId } = req.body;
+    if (!title || !artist || !year || !youtubeId) {
+        return res.status(400).json({ errorMessage: "Required fields not added. "});
+    }
+    // get song by Id
+    song = await Song.findOne({ songId: req.params.id });
+    if (!song) {
+        return res.status(404).json({ errorMessage: "Song to edit does not exist."});
+    }
+    song.title = title;
+    song.artist = artist;
+    song.year = year;
+    song.youtubeId = youtubeId;
+    try {
+        await song.save();
+    } catch (err) {
+        return res.status(400).json({ errorMessage: "Failed to save edited song to database."});
+    }
+}
+
 
 module.exports = {
     createSong,
