@@ -3,8 +3,8 @@ const Schema = mongoose.Schema
 
 const songSchema = new Schema(
     {
-        id: { type: String, required: true },
-                title: { type: String, required: true },
+        songId: { type: String, required: true },
+        title: { type: String, required: true },
         artist: { type: String, required: true },
         year: { type: String, required: true },
         youtubeId: { type: String, required: true },
