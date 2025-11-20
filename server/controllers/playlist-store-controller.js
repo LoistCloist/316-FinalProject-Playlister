@@ -18,14 +18,7 @@ createPlaylist = async (req, res) => {
             error: 'Please provide all required fields.'
         })
     }
-    // const 
-    
-    console.log(`Creating playlist ${playlist.toString()}...`);
-    if (!playlist) {
-        return res
-                .status(400)
-                .json({ success: false, error: err });
-    }
+    const playlistId = randomUUID();
     try {
         const user = await User.findOne({ _id: req.userId });
         if (!user) {
@@ -35,13 +28,21 @@ createPlaylist = async (req, res) => {
                         errorMessage: "User not found for CreatePlaylist!"
                     })
         }
-        user.playlists.push(playlist._id);
+        const playlist = Playlist.create({
+            playlistId: playlistId,
+            userId: userId,
+            playlistName: playlistName,
+            userName: userName,
+            email: email,
+            songs: songs
+        })
+        user.playlists.push(playlist.playlistId);
         await user.save();
         await playlist.save();
         return res.status(200).json({ success: true });
     } catch (error) {
         return res.status(400).json({
-            errorMessage: "Playlist not created~!"
+            errorMessage: "Error creating new playlist"
         })
     }
 }
