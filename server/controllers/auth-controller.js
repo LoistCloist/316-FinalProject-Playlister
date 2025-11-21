@@ -1,5 +1,5 @@
 const auth = require('../auth')
-const User = require('../models/user-model')
+const User = require('../schemas/user-model')
 const bcrypt = require('bcryptjs')
 const { randomUUID } = require('crypto');
 
