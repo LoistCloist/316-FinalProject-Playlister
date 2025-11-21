@@ -10,7 +10,7 @@ const songSchema = new Schema(
         youtubeId: { type: String, required: true },
         listens: { type: Number, required: true },
         inPlaylists: [{ type: String, trim: true, required: true}],
-        addedBy: { type: String, required: true }
+        addedById: { type: String, required: true }
     },
     { timestamps: true }
 )

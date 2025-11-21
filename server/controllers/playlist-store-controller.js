@@ -55,7 +55,6 @@ deletePlaylistById = async (req, res) => {
         })
     }
     // You can only delete playlists that belong to the user.
-    // check if 
     playlist = await Playlist.findById({ playlistId: req.params.id });
     if (!playlist) {
         return res

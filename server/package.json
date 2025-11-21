@@ -1,0 +1,27 @@
+{
+  "name": "heinzarni-316-finalproject",
+  "version": "1.0.0",
+  "description": "Final project for SBU's CSE316 in Fall 2025",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LoistCloist/316-FinalProject-Playlister.git"
+  },
+  "author": "Hein Zarni Aung",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LoistCloist/316-FinalProject-Playlister/issues"
+  },
+  "homepage": "https://github.com/LoistCloist/316-FinalProject-Playlister#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.20.0"
+  }
+}

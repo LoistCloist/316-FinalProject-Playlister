@@ -97,6 +97,71 @@ editSongById = async (req, res) => {
     }
 }
 
+getAllSongsInPlaylist = async (req, res) => {
+    if (auth.verifyUser(req) === null){
+        return res.status(400).json({
+            errorMessages: 'UNAUTHORIZED'
+        })
+    }
+    playlistId = req.params.id;
+    if (!playlistId) {
+        return res.status(400).json({
+            errorMessages: "Invalid playlist id or not included."
+        })
+    }
+    playlist = await Playlist.findOne({ playlistId: req.params.id});
+    if (!playlist.songs) {
+        return res.status(404).json({
+            errorMessage: "getAllSongsInPlaylist - Could not find playlist or songs."
+        })
+    }
+    return res.status(200).json({ success: true, songs: playlist.songs });
+}
+
+getUserSongs = async (req, res) => {
+    if (auth.verifyUser(req) === null){
+        return res.status(400).json({
+            errorMessages: 'UNAUTHORIZED'
+        })
+    }
+    user_id = req.params.id;
+    if (!user_id) {
+        return res.status(400).json({ errorMessage: "userId formatted incorrectly. "});
+    }
+    songs = await Song.find({ addedById: user_id })
+    if (!songs) {
+        return res.status(404).json({ errorMessage: "Songs added by userid not found."});
+    }
+    return res.status(200).json({ success: true, songs: songs});
+}
+
+deleteSongById = async (req, res) => {
+    if (auth.verifyUser(req) === null){
+        return res.status(400).json({
+            errorMessages: 'UNAUTHORIZED'
+        })
+    }
+    // check if user has the perms to delete.
+    songId = req.params.id;
+    if (!songId) {
+        return res.status(400).json({
+            errorMessage: "Incorrect or missing songId."
+        });
+    }
+    song = await Song.findOne({ songId: songId });
+    if (!song) {
+        return res.status(404).json({
+            errorMessage: "Cannot find song from given id."
+        })
+    }
+    if (req.userId !== song.addedById) {
+        return res.status(400).json({
+            errorMessage: "User does not match owner. No authorization."
+        })
+    }
+    deletedSong = await Song.findByIdAndDelete(song.songId);
+    return res.status(200).json({ success: true, song: deletedSong });
+}
 
 module.exports = {
     createSong,
