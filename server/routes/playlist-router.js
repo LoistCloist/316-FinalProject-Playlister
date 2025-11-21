@@ -1,5 +1,5 @@
 const express = require('express')
-const PlaylistController = require('../controllers')
+const PlaylistController = require('../controllers/playlist-store-controller')
 const router = express.Router()
 const auth = require('../auth')
 

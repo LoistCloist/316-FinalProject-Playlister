@@ -1,5 +1,5 @@
 const express = require('express')
-const SongController = require('../controllers')
+const SongController = require('../controllers/song-store-controller')
 const router = express.Router()
 const auth = require('../auth')
 
