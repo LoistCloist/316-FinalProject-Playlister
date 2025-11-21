@@ -9,8 +9,8 @@ const songSchema = new Schema(
         year: { type: String, required: true },
         youtubeId: { type: String, required: true },
         listens: { type: Number, required: true },
-        inPlaylists: [{ type: String, trim: true, required: true}]
-
+        inPlaylists: [{ type: String, trim: true, required: true}],
+        addedBy: { type: String, required: true }
     },
     { timestamps: true }
 )
