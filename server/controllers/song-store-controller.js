@@ -165,7 +165,7 @@ deleteSongById = async (req, res) => {
 
 module.exports = {
     createSong,
-    getTargetSong,
+    getTargetSongs,
     getSongById,
     editSongById,
     getAllSongsInPlaylist,

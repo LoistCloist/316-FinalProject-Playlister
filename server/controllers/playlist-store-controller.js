@@ -76,10 +76,16 @@ deletePlaylistById = async (req, res) => {
     }
 }
 
-getPlaylists(playlistName, userName, title, artist, year) = async (req, res) => {
+getPlaylists = async (req, res) => {
     if(auth.verifyUser(req) === null){
         return res.status(400).json({
             errorMessage: 'UNAUTHORIZED'
+        })
+    }
+    const { playlistName, userName, title, artist, year } = req.body;
+    if (!playlistName || !userName || !title || !artist || !year) {
+        return res.status(400).json({
+            errorMessage: "Please provide all required fields."
         })
     }
     // intializing the regex for all fields.
@@ -206,7 +212,7 @@ updatePlaylist = async (req, res) => {
 module.exports = {
     createPlaylist,
     deletePlaylistById,
-    getPlaylist,
+    getPlaylists,
     getPlaylistById,
     getUserPlaylists,
     getAllPlaylists,

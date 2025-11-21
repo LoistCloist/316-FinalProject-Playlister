@@ -21,8 +21,10 @@ app.use(cookieParser())
 // SETUP OUR OWN ROUTERS AS MIDDLEWARE
 const authRouter = require('./routes/auth-router')
 app.use('/auth', authRouter)
-const storeRouter = require('./routes/store-router')
-app.use('/store', storeRouter)
+const playlistRouter = require('./routes/playlist-router')
+app.use('/store', playlistRouter)
+const songRouter = require('./routes/song-router')
+app.use('/store', songRouter)
 
 // INITIALIZE OUR DATABASE OBJECT
 const db = require('./db')
