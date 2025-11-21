@@ -3,7 +3,6 @@ const User = require('../models/user-model')
 const bcrypt = require('bcryptjs')
 const { randomUUID } = require('crypto');
 
-
 getLoggedIn = async (req, res) => {
     try {
         let userId = auth.verifyUser(req);
@@ -21,9 +20,11 @@ getLoggedIn = async (req, res) => {
         return res.status(200).json({
             loggedIn: true,
             user: {
-                firstName: loggedInUser.firstName,
-                lastName: loggedInUser.lastName,
-                email: loggedInUser.email
+                userId: loggedIn.userId,
+                userName: loggedInUser.userName,
+                email: loggedInUser.email,
+                avatar: loggedInUser.avatar,
+                playlists: loggedInUser.playlists
             }
         })
     } catch (err) {
@@ -75,9 +76,11 @@ loginUser = async (req, res) => {
         }).status(200).json({
             success: true,
             user: {
-                firstName: existingUser.firstName,
-                lastName: existingUser.lastName,  
-                email: existingUser.email              
+                userId: existingUser.userId,
+                userName: existingUser.userName,
+                email: existingUser.email,
+                avatar: existingUser.avatar,
+                playlists: existingUser.playlists          
             }
         })
 
@@ -99,7 +102,7 @@ logoutUser = async (req, res) => {
 registerUser = async (req, res) => {
     console.log("REGISTERING USER IN BACKEND");
     try {
-        const { firstName, lastName, email, password, passwordVerify } = req.body;
+        const { userName, email, password, passwordVerify, avatar } = req.body;
         console.log("create user: " + firstName + " " + lastName + " " + email + " " + password + " " + passwordVerify);
         if (!firstName || !lastName || !email || !password || !passwordVerify) {
             return res
@@ -139,7 +142,8 @@ registerUser = async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
         console.log("passwordHash: " + passwordHash);
 
-        const newUser = new User({firstName, lastName, email, passwordHash});
+        const userId = randomUUID();
+        const newUser = new User({ userId, userName, email, passwordHash, avatar});
         const savedUser = await newUser.save();
         console.log("new user saved: " + savedUser._id);
 
