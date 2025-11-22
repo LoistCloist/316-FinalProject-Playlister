@@ -8,54 +8,31 @@ import {
     IconButton,
     Avatar
 } from '@mui/material'
-import { styled } from '@mui/material/styles';
 import { whiteTextFieldSx } from '../styles';
-
-const VisuallyHiddenInput = styled('input')({
-    clip: 'rect(0 0 0 0)',
-    clipPath: 'inset(50%)',
-    height: 1,
-    overflow: 'hidden',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    whiteSpace: 'nowrap',
-    width: 1,
-});
 
 function CreateAccountScreen() {
     return (
         <>
             <Box id="create-account-header" >
-                <LockOutlineIcon size="large"/>
-                <Typography variant="h3">
+                <LockOutlineIcon sx={{ fontSize: 60 }} />
+                <Typography variant="h4">
                     Create Account
                 </Typography>
             </Box>
-            <Stack>
+            <Stack spacing={1} justifyContents="center">
+                <IconButton component="label">
+                    <Stack spacing={1} justifyContent="center" alignItems="center">
+                        <Avatar alt="P" src="../../assets/react.svg" />
+                        <Typography sx={{ color: 'white'}} >Select Avatar</Typography>
+                    </Stack>
+                    <input type="file" hidden accept="image/*" />
+                </IconButton>
                 <TextField label="Username" variant="outlined" sx={whiteTextFieldSx} />
                 <TextField label="Email" variant="outlined" sx={whiteTextFieldSx} />
                 <TextField label="Password" variant="outlined" sx={whiteTextFieldSx} />
                 <TextField label="Confirm Password" variant="outlined" sx={whiteTextFieldSx} />
-                <Button>Create Account</Button>
+                <Button >Create Account</Button>
             </Stack>
-            <Box id="avatar-select">
-                <IconButton 
-                    component="label"
-                    variant="contained"
-                    role={undefined}
-                    tabIndex={-1}
-                    >
-                    <Avatar alt="P" src="../../assets/react.svg" />
-                    <VisuallyHiddenInput 
-                        type="file" 
-                        onChange={(event) => console.log(event.target.files)} 
-                        multiple
-                    />
-                    <Typography>SELECT</Typography>
-                </IconButton>
-                
-            </Box>
         </>
     )
 }

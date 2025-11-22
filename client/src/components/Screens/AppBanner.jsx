@@ -6,7 +6,8 @@ import {
     IconButton,
     Toolbar,
     Box,
-    Typography
+    Typography,
+    Link
 } from "@mui/material";
 import * as React from 'react'
 import CottageIcon from '@mui/icons-material/Cottage';
@@ -62,12 +63,11 @@ function AppBanner() {
                             open={Boolean(anchorEl)}>
                             <MenuItem> Login </MenuItem>
                             <MenuItem> Create Account </MenuItem>
-                            <MenuItem> Edit Account </MenuItem>
+                            <MenuItem component={Link} to="/editAccount"> Edit Account </MenuItem>
                             <MenuItem> Logout </MenuItem>
                     </Menu>
                 </Box>
             </Toolbar>
-
         </AppBar>
     )
 }
