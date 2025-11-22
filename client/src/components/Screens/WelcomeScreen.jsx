@@ -1,36 +1,12 @@
 import { Typography, Card, Link, Button } from '@mui/material'
-import { styled } from '@mui/material/styles';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-
-const VisuallyHiddenInput = styled('input')({
-  clip: 'rect(0 0 0 0)',
-  clipPath: 'inset(50%)',
-  height: 1,
-  overflow: 'hidden',
-  position: 'absolute',
-  bottom: 0,
-  left: 0,
-  whiteSpace: 'nowrap',
-  width: 1,
-});
 
 function WelcomeScreen() {
     return (
         <div>
-            <Button
-                component="label"
-                role={undefined}
-                variant="contained"
-                tabIndex={-1}
-                startIcon={<CloudUploadIcon />}
-                >
-                Upload files
-                <VisuallyHiddenInput
-                    type="file"
-                    onChange={(event) => console.log(event.target.files)}
-                    multiple
-                />
-            </Button>
+            <Typography variant="h2"> The Playlister </Typography>
+            <Button>Continue as Guest</Button>
+            <Button href="/login">Login</Button>
+            <Button href="/register">Create Account</Button>
         </div>
     )
 }

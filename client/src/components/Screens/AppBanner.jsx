@@ -5,11 +5,12 @@ import {
     MenuItem,
     IconButton,
     Toolbar,
-    Box
+    Box,
+    Typography
 } from "@mui/material";
 import * as React from 'react'
 import CottageIcon from '@mui/icons-material/Cottage';
-import { SegmentedControl, Typography } from '@mantine/core';
+import { SegmentedControl } from '@mantine/core';
 import {useState} from 'react'
 
 function AppBanner() {
@@ -29,14 +30,14 @@ function AppBanner() {
         <AppBar>
             {/* toolbar for horizontal proper spacing and layout. */}
             <Toolbar sx={{ display: 'flex' }}>
-                <IconButton id="HomeButton" size="large" edge="start">
+                <IconButton id="HomeButton" size="large" edge="start" href="/">
                     <CottageIcon fontSize="large" sx={{color: 'white' }} />
                 </IconButton>
                 <SegmentedControl value={view} onChange={handleViewChange} data={[
                     { label: 'Playlists', value: 'playlists' },
                     { label: 'Songs', value: 'songs' },
                 ]} />
-                <Typography component="h1" sx={{
+                <Typography component="h2" sx={{
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
