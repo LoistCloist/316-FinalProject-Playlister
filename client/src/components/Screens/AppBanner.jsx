@@ -6,17 +6,19 @@ import {
     IconButton,
     Toolbar,
     Box,
-    Typography,
-    Link
+    Typography
 } from "@mui/material";
 import * as React from 'react'
 import CottageIcon from '@mui/icons-material/Cottage';
 import { SegmentedControl } from '@mantine/core';
 import {useState} from 'react'
+import { Link, useNavigate } from 'react-router-dom';
+
 
 function AppBanner() {
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [view, setView] = useState('playlists');
+    const navigate = useNavigate();
     const handleMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
         // makes currentTarget the element that other components will attach to.
@@ -26,6 +28,7 @@ function AppBanner() {
     }
     const handleViewChange = (view) => {
         setView(view);
+        navigate(view);
     }
     return (
         <AppBar>
@@ -61,8 +64,8 @@ function AppBanner() {
                             horizontal: 'right',
                             }}
                             open={Boolean(anchorEl)}>
-                            <MenuItem> Login </MenuItem>
-                            <MenuItem> Create Account </MenuItem>
+                            <MenuItem component={Link} to='/login'> Login </MenuItem>
+                            <MenuItem component={Link} to="/register"> Create Account </MenuItem>
                             <MenuItem component={Link} to="/editAccount"> Edit Account </MenuItem>
                             <MenuItem> Logout </MenuItem>
                     </Menu>

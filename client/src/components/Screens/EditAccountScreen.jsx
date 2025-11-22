@@ -6,7 +6,8 @@ import {
     TextField,
     Button,
     IconButton,
-    Avatar
+    Avatar,
+    Toolbar
 } from '@mui/material'
 import { whiteTextFieldSx } from '../styles';
 
@@ -16,7 +17,7 @@ function EditAccountScreen() {
             <Box id="create-account-header" >
                 <LockOutlineIcon sx={{ fontSize: 60 }} />
                 <Typography variant="h4">
-                    Create Account
+                    Edit Account
                 </Typography>
             </Box>
             <Stack spacing={1} justifyContents="center">
@@ -31,7 +32,10 @@ function EditAccountScreen() {
                 <TextField label="Email" variant="outlined" sx={whiteTextFieldSx} />
                 <TextField label="Password" variant="outlined" sx={whiteTextFieldSx} />
                 <TextField label="Confirm Password" variant="outlined" sx={whiteTextFieldSx} />
-                <Button >Create Account</Button>
+                <Toolbar>
+                    <Button >Confirm</Button>
+                    <Button> Cancel</Button>
+                </Toolbar>
             </Stack>
         </>
     )
