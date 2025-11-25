@@ -14,7 +14,7 @@ import { whiteTextFieldSx } from '../styles';
 function EditAccountScreen() {
     return (
         <>
-            <Box id="create-account-header" >
+            <Box id="create-account-header" display="flex" justifyContent="center" alignItems="center">
                 <LockOutlineIcon sx={{ fontSize: 60 }} />
                 <Typography variant="h4">
                     Edit Account
@@ -33,8 +33,8 @@ function EditAccountScreen() {
                 <TextField label="Password" variant="outlined" sx={whiteTextFieldSx} />
                 <TextField label="Confirm Password" variant="outlined" sx={whiteTextFieldSx} />
                 <Toolbar>
-                    <Button >Confirm</Button>
-                    <Button> Cancel</Button>
+                    <Button variant="contained">Confirm</Button>
+                    <Button variant="contained"> Cancel</Button>
                 </Toolbar>
             </Stack>
         </>

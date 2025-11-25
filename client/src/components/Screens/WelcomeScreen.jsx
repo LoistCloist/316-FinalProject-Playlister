@@ -3,12 +3,12 @@ import { Typography, Card, Link, Button } from '@mui/material'
 function WelcomeScreen() {
     return (
         <div>
-            <Typography variant="h2"> The Playlister </Typography>
-            <Button>Continue as Guest</Button>
-            <Button href="/login">Login</Button>
-            <Button href="/register">Create Account</Button>
-            <Button href="/playlists">Playlists</Button>
-            <Button href="/songs">Songs</Button>
+            <Typography variant="h2" color="textLight"> The Playlister </Typography>
+            <Button variant="contained">Continue as Guest</Button>
+            <Button variant="contained" href="/login">Login</Button>
+            <Button variant="contained" href="/register">Create Account</Button>
+            <Button variant="contained" href="/playlists">Playlists</Button>
+            <Button variant="contained" href="/songs">Songs</Button>
         </div>
     )
 }

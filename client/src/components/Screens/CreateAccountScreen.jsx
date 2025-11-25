@@ -13,9 +13,9 @@ import { whiteTextFieldSx } from '../styles';
 function CreateAccountScreen() {
     return (
         <>
-            <Box id="create-account-header" >
-                <LockOutlineIcon sx={{ fontSize: 60 }} />
-                <Typography variant="h4">
+            <Box id="create-account-header" justifyContent="center">
+                <LockOutlineIcon color="white" sx={{ fontSize: 60 }} />
+                <Typography variant="h4" color="white">
                     Create Account
                 </Typography>
             </Box>
@@ -31,7 +31,7 @@ function CreateAccountScreen() {
                 <TextField label="Email" variant="outlined" sx={whiteTextFieldSx} />
                 <TextField label="Password" variant="outlined" sx={whiteTextFieldSx} />
                 <TextField label="Confirm Password" variant="outlined" sx={whiteTextFieldSx} />
-                <Button >Create Account</Button>
+                <Button variant="contained">Create Account</Button>
             </Stack>
         </>
     )
