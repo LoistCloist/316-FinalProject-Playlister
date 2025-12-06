@@ -50,14 +50,14 @@ createPlaylist = async (req, res) => {
 }
 
 deletePlaylistById = async (req, res) => {
-    // req gets req.userId field
+    // req gets req.userId field (mongoose _id)
     if (auth.verifyUser(req) === null) {
         return res.status(400).json({
             errorMessage: 'UNAUTHORIZED'
         })
     }
     // You can only delete playlists that belong to the user.
-    playlist = await Playlist.findById({ playlistId: req.params.id });
+    const playlist = await Playlist.findOne({ playlistId: req.params.id });
     if (!playlist) {
         return res
                 .status(404).json({
@@ -65,11 +65,22 @@ deletePlaylistById = async (req, res) => {
                 })
     }
 
-    user = await User.findOne({ email: playlist.email });
-    if (req.userId == user.userId) {
-        Playlist.findOneAndDelete({ playlistId: req.params.id }, () => {
-            return res.status(200).json({ success: true });
-        }).catch(err => console.log(err))
+    // Get the user's UUID (not mongoose _id) for comparison
+    const user = await User.findOne({ _id: req.userId });
+    if (!user) {
+        return res.status(400).json({
+            errorMessage: "User not found."
+        })
+    }
+    
+    if (playlist.userId === user.userId) {
+        // remove playlist from user's playlists array
+        user.playlists = user.playlists.filter(id => id !== playlist.playlistId);
+        await user.save();
+        
+        // delete the playlist
+        await Playlist.findOneAndDelete({ playlistId: req.params.id });
+        return res.status(200).json({ success: true });
     }
     else {
         return res.status(400).json({
