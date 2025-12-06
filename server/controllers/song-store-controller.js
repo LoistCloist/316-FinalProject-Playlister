@@ -47,10 +47,23 @@ getTargetSongs = async (req, res) => {
         })
     }
     const { title, artist, year } = req.body
-    if (!title || !artist || !year) {
-        return res.status(400).json({ errorMessage: "Please include all fields. "});
+    if (!title && !artist && !year) {
+        return res.status(400).json({ errorMessage: "Please include at least one search field."});
     }
-    const songs = await Song.find({ title: title, artist: artist, year: year });
+    
+    // Build query object with only provided fields
+    const query = {};
+    if (title) {
+        query.title = title;
+    }
+    if (artist) {
+        query.artist = artist;
+    }
+    if (year) {
+        query.year = year;
+    }
+    
+    const songs = await Song.find(query);
     if (!songs || songs.length === 0) {
         return res.status(404).json({ errorMessage: "No songs found with given criteria."});
     }
