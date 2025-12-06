@@ -13,13 +13,14 @@ createSong = async (req, res) => {
             errorMessages: 'UNAUTHORIZED'
         })
     }
-    const { title, artist, year, youtubeId, ownerEmail } = body
+    const { title, artist, year, youtubeId, ownerEmail } = req.body
     if (!title || !artist || !year || !youtubeId || !ownerEmail ) {
         return res.status(400).json({
             errorMessage: 'Missing fields'
         })
     }
-    songId = randomeUUID();
+    const songId = randomUUID();
+    const userId = auth.verifyUser(req);
     try {
         await Song.create({
             songId: songId,
@@ -28,7 +29,8 @@ createSong = async (req, res) => {
             year: year,
             youtubeId: youtubeId,
             listens: 0,
-            inPlaylists: []
+            inPlaylists: [],
+            addedById: userId
         })
         return res.status(200).json({ success: true })
     } catch (err) {
@@ -48,8 +50,8 @@ getTargetSongs = async (req, res) => {
     if (!title || !artist || !year) {
         return res.status(400).json({ errorMessage: "Please include all fields. "});
     }
-    songs = Song.find({ title: title, artist: artist, year: year });
-    if (!songs) {
+    const songs = await Song.find({ title: title, artist: artist, year: year });
+    if (!songs || songs.length === 0) {
         return res.status(404).json({ errorMessage: "No songs found with given criteria."});
     }
     return res.status(200).json({
@@ -64,7 +66,7 @@ getSongById = async (req, res) => {
             errorMessages: 'UNAUTHORIZED'
         })
     }
-    song = await Song.findOne({ songId: req.params.id})
+    const song = await Song.findOne({ songId: req.params.id})
     if (!song) {
         return res.status(404).json({ errorMessage: "Song does not exist!"})
     }
@@ -82,7 +84,7 @@ editSongById = async (req, res) => {
         return res.status(400).json({ errorMessage: "Required fields not added. "});
     }
     // get song by Id
-    song = await Song.findOne({ songId: req.params.id });
+    const song = await Song.findOne({ songId: req.params.id });
     if (!song) {
         return res.status(404).json({ errorMessage: "Song to edit does not exist."});
     }
@@ -92,6 +94,7 @@ editSongById = async (req, res) => {
     song.youtubeId = youtubeId;
     try {
         await song.save();
+        return res.status(200).json({ success: true });
     } catch (err) {
         return res.status(400).json({ errorMessage: "Failed to save edited song to database."});
     }
@@ -103,16 +106,21 @@ getAllSongsInPlaylist = async (req, res) => {
             errorMessages: 'UNAUTHORIZED'
         })
     }
-    playlistId = req.params.id;
+    const playlistId = req.params.id;
     if (!playlistId) {
         return res.status(400).json({
             errorMessages: "Invalid playlist id or not included."
         })
     }
-    playlist = await Playlist.findOne({ playlistId: req.params.id});
+    const playlist = await Playlist.findOne({ playlistId: req.params.id});
+    if (!playlist) {
+        return res.status(404).json({
+            errorMessage: "getAllSongsInPlaylist - Could not find playlist."
+        })
+    }
     if (!playlist.songs) {
         return res.status(404).json({
-            errorMessage: "getAllSongsInPlaylist - Could not find playlist or songs."
+            errorMessage: "getAllSongsInPlaylist - Playlist has no songs."
         })
     }
     return res.status(200).json({ success: true, songs: playlist.songs });
@@ -124,12 +132,12 @@ getUserSongs = async (req, res) => {
             errorMessages: 'UNAUTHORIZED'
         })
     }
-    user_id = req.params.id;
+    const user_id = req.params.id;
     if (!user_id) {
         return res.status(400).json({ errorMessage: "userId formatted incorrectly. "});
     }
-    songs = await Song.find({ addedById: user_id })
-    if (!songs) {
+    const songs = await Song.find({ addedById: user_id })
+    if (!songs || songs.length === 0) {
         return res.status(404).json({ errorMessage: "Songs added by userid not found."});
     }
     return res.status(200).json({ success: true, songs: songs});
@@ -142,13 +150,13 @@ deleteSongById = async (req, res) => {
         })
     }
     // check if user has the perms to delete.
-    songId = req.params.id;
+    const songId = req.params.id;
     if (!songId) {
         return res.status(400).json({
             errorMessage: "Incorrect or missing songId."
         });
     }
-    song = await Song.findOne({ songId: songId });
+    const song = await Song.findOne({ songId: songId });
     if (!song) {
         return res.status(404).json({
             errorMessage: "Cannot find song from given id."
@@ -159,7 +167,7 @@ deleteSongById = async (req, res) => {
             errorMessage: "User does not match owner. No authorization."
         })
     }
-    deletedSong = await Song.findByIdAndDelete(song.songId);
+    const deletedSong = await Song.findOneAndDelete({ songId: songId });
     return res.status(200).json({ success: true, song: deletedSong });
 }
 
