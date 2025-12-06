@@ -20,8 +20,15 @@ createSong = async (req, res) => {
         })
     }
     const songId = randomUUID();
-    const userId = auth.verifyUser(req);
+    const mongooseUserId = auth.verifyUser(req);
     try {
+        // Get the user's UUID (not the mongoose _id)
+        const user = await User.findOne({ _id: mongooseUserId });
+        if (!user) {
+            return res.status(400).json({
+                errorMessage: "User not found."
+            })
+        }
         await Song.create({
             songId: songId,
             title: title,
@@ -30,7 +37,7 @@ createSong = async (req, res) => {
             youtubeId: youtubeId,
             listens: 0,
             inPlaylists: [],
-            addedById: userId
+            addedById: user.userId  // Use UUID, not mongoose _id
         })
         return res.status(200).json({ success: true })
     } catch (err) {
@@ -175,7 +182,14 @@ deleteSongById = async (req, res) => {
             errorMessage: "Cannot find song from given id."
         })
     }
-    if (req.userId !== song.addedById) {
+    // Get the user's UUID (not the mongoose _id) for comparison
+    const user = await User.findOne({ _id: req.userId });
+    if (!user) {
+        return res.status(400).json({
+            errorMessage: "User not found."
+        })
+    }
+    if (user.userId !== song.addedById) {
         return res.status(400).json({
             errorMessage: "User does not match owner. No authorization."
         })
