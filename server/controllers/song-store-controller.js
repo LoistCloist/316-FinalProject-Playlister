@@ -58,16 +58,15 @@ getTargetSongs = async (req, res) => {
         return res.status(400).json({ errorMessage: "Please include at least one search field."});
     }
     
-    // Build query object with only provided fields
     const query = {};
     if (title) {
-        query.title = title;
+        query.title = { $regex: title, $options: 'i' }; 
     }
     if (artist) {
-        query.artist = artist;
+        query.artist = { $regex: artist, $options: 'i' }; 
     }
     if (year) {
-        query.year = year;
+        query.year = { $regex: year, $options: 'i' };
     }
     
     const songs = await Song.find(query);

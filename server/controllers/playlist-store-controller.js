@@ -20,7 +20,8 @@ createPlaylist = async (req, res) => {
     }
     const playlistId = randomUUID();
     try {
-        const user = await User.findOne({ _id: req.userId });
+        const mongooseUserId = auth.verifyUser(req);
+        const user = await User.findOne({ _id: mongooseUserId });
         if (!user) {
             return res
                     .status(400)
@@ -28,9 +29,9 @@ createPlaylist = async (req, res) => {
                         errorMessage: "User not found for CreatePlaylist!"
                     })
         }
-        const playlist = Playlist.create({
+        const playlist = await Playlist.create({
             playlistId: playlistId,
-            userId: userId,
+            userId: user.userId, 
             playlistName: playlistName,
             userName: userName,
             email: email,
@@ -38,11 +39,12 @@ createPlaylist = async (req, res) => {
         })
         user.playlists.push(playlist.playlistId);
         await user.save();
-        await playlist.save();
         return res.status(200).json({ success: true });
     } catch (error) {
+        console.error("Error creating playlist:", error);
         return res.status(400).json({
-            errorMessage: "Error creating new playlist"
+            errorMessage: "Error creating new playlist",
+            error: error.message
         })
     }
 }

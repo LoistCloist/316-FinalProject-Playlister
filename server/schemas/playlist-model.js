@@ -6,7 +6,7 @@ const Schema = mongoose.Schema
 
 const playlistSchema = new Schema(
     {
-        playlistId: { type: Number, required: true },
+        playlistId: { type: String, required: true },
         userId: { type: String, required: true },
         playlistName: { type: String, required: true },
         userName: { type: String, required: true },
