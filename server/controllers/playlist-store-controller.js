@@ -205,15 +205,18 @@ getAllPlaylists = async (req, res) => {
             errorMessage: 'UNAUTHORIZED'
         })
     }
-    const allPlaylists = await Playlist.find({});
-    if (!allPlaylists) {
-        return res
-                .status(404)
-                .json({
-                    errorMessage: "Playlists not found or no playlists exist"
-                })
+    try {
+        const allPlaylists = await Playlist.find({});
+        return res.status(200).json({ 
+            success: true, 
+            playlists: allPlaylists || [] 
+        });
+    } catch (error) {
+        console.error("Error getting all playlists:", error);
+        return res.status(500).json({
+            errorMessage: "Error retrieving playlists"
+        });
     }
-    return res.status(200).json({ success: true, playlists: allPlaylists});
 }
 
 updatePlaylist = async (req, res) => {
