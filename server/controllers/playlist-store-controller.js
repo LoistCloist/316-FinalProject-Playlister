@@ -222,22 +222,32 @@ updatePlaylist = async (req, res) => {
             errorMessage: 'UNAUTHORIZED'
         })
     }
-    const { playlistName, ownerEmail, songs } = req.body;
-    if (!playlistName || !ownerEmail || !songs ) {
+    const { playlistName, songs } = req.body;
+    if (!playlistName || !songs ) {
         return res.status(400).json({ errorMessage: "Some fields missing..."});
     }
-    // check if user should be allowed to get this playlist
-    playlist = await Playlist.findOne({ playlistId: req.userId });
+    // Find playlist by playlistId from URL params
+    const playlist = await Playlist.findOne({ playlistId: req.params.id });
     if (!playlist) {
         return res.status(404).json({ errorMessage: "Playlist not found!"})
     }
-    if (playlist.userId !== req.userId) {
+    
+    // Get the user's UUID (not mongoose _id) for comparison
+    const user = await User.findOne({ _id: req.userId });
+    if (!user) {
+        return res.status(400).json({
+            errorMessage: "User not found."
+        })
+    }
+    
+    // Compare playlist userId (UUID) with user userId (UUID)
+    if (playlist.userId !== user.userId) {
         return res.status(400).json( {errorMessage: "Incorrect user. Authentication failed."})
     }
     playlist.playlistName = playlistName;
-    playlist.email = ownerEmail;
-    playlist.songs = songs
+    playlist.songs = songs;
     await playlist.save();
+    return res.status(200).json({ success: true });
 }
 
 module.exports = {
