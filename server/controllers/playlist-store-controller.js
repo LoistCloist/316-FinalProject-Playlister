@@ -131,9 +131,12 @@ getPlaylistById = async (req, res) => {
             errorMessage: 'UNAUTHORIZED'
         })
     }
-    playlist = await Playlist.findById({ playlistId: req.params.id });
+    const playlist = await Playlist.findOne({ playlistId: req.params.id });
     if (!playlist) {
-        return res.status(400).json({ success: false, error: err})
+        return res.status(404).json({ 
+            success: false, 
+            errorMessage: "Playlist not found!" 
+        })
     }
     return res
             .status(200)
