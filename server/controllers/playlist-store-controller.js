@@ -85,43 +85,56 @@ getPlaylists = async (req, res) => {
         })
     }
     const { playlistName, userName, title, artist, year } = req.body;
-    if (!playlistName || !userName || !title || !artist || !year) {
-        return res.status(400).json({
-            errorMessage: "Please provide all required fields."
-        })
-    }
-    // intializing the regex for all fields.
-    const playlistNameRegex = new RegExp(playlistName, 'i');
-    const userNameRegex = new RegExp(playlistName, 'i');
-    const titleRegex = new RegExp(playlistName, 'i');
-    const artistRegex = new RegExp(playlistName, 'i');
-    const yearRegex = new RegExp(playlistName, 'i');
-
-    // get a list of songIds that fulfill the title, artist, and year
-    const songIds = await Song
-                            .find({
-                                title: { $regex: titleRegex }, 
-                                artist: { $regex: artistRegex }, 
-                                year: { $regex: yearRegex } 
-                            })
-                            .select('songId');
-    if (!songIds) {
-        return res.status(400).json({
-            errorMessage: "No songs matching criteria found!"
-        })
-    }
-    const playlists = await Playlist.find({
-        playlistName: { $regex: playlistNameRegex },
-        email: { $regex: userNameRegex },
-        songs: { $in: songIdds }
-    })
-    if (!playlists) {
-        return res.status(404).json({
-            errorMessage: "No playlists matching criteria found!"
-        })
-    }
-    return res.status(200).json({ success: true, playlists: playlists})
     
+    // Require at least one field
+    if (!playlistName && !userName && !title && !artist && !year) {
+        return res.status(400).json({
+            errorMessage: "Please provide at least one search field."
+        })
+    }
+    
+    // Build song query with only provided fields
+    const songQuery = {};
+    if (title) {
+        songQuery.title = { $regex: title, $options: 'i' };
+    }
+    if (artist) {
+        songQuery.artist = { $regex: artist, $options: 'i' };
+    }
+    if (year) {
+        songQuery.year = { $regex: year, $options: 'i' };
+    }
+    
+    // Build playlist query
+    const playlistQuery = {};
+    if (playlistName) {
+        playlistQuery.playlistName = { $regex: playlistName, $options: 'i' };
+    }
+    if (userName) {
+        playlistQuery.userName = { $regex: userName, $options: 'i' };
+    }
+    
+    // If song search criteria are provided, find matching songs first
+    let songIds = [];
+    if (title || artist || year) {
+        const songDocuments = await Song.find(songQuery).select('songId');
+        if (songDocuments && songDocuments.length > 0) {
+            songIds = songDocuments.map(song => song.songId);
+            playlistQuery.songs = { $in: songIds };
+        } else {
+            // No songs match, so no playlists can match
+            return res.status(200).json({ 
+                success: true, 
+                playlists: [] 
+            });
+        }
+    }
+    
+    const playlists = await Playlist.find(playlistQuery);
+    return res.status(200).json({ 
+        success: true, 
+        playlists: playlists || [] 
+    });
 }
 
 // you shouldn't need to check if the playlist belongs to this user before returning.
