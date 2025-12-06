@@ -149,24 +149,26 @@ getUserPlaylists = async (req, res) => {
             errorMessage: 'UNAUTHORIZED'
         })
     }
-    user_id = req.params.user_id;
-    if (!user_id) {
-        res.status(400).json({
+    const userid = req.params.userid;
+    if (!userid) {
+        return res.status(400).json({
             errorMessage: "User id is missing."
         })
     }
-    user = await User.find({ userId: user_id });
+    const user = await User.findOne({ userId: userid });
     if (!user) {
-        res.status(404).json({
+        return res.status(404).json({
             errorMessage: "User not found!"
         })
     }
-    playlists = await Playlist.find({ userId: user.userId });
-    if (!playlists) {
-        return res.status(404).json({
-            errorMessage: "Playlists belong to user not found!"
+    // Use the playlistIds array from the user document
+    if (!user.playlists || user.playlists.length === 0) {
+        return res.status(200).json({
+            success: true,
+            playlists: []
         })
     }
+    const playlists = await Playlist.find({ playlistId: { $in: user.playlists } });
     return res.status(200).json({
         success: true,
         playlists: playlists
