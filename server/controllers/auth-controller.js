@@ -1,6 +1,6 @@
 const auth = require('../auth')
 const User = require('../schemas/user-model')
-const bcrypt = require('bcryptjs')
+const bcrypt = require('bcrypt')
 const { randomUUID } = require('crypto');
 
 getLoggedIn = async (req, res) => {
@@ -20,7 +20,7 @@ getLoggedIn = async (req, res) => {
         return res.status(200).json({
             loggedIn: true,
             user: {
-                userId: loggedIn.userId,
+                userId: loggedInUser.userId,
                 userName: loggedInUser.userName,
                 email: loggedInUser.email,
                 avatar: loggedInUser.avatar,
@@ -103,8 +103,8 @@ registerUser = async (req, res) => {
     console.log("REGISTERING USER IN BACKEND");
     try {
         const { userName, email, password, passwordVerify, avatar } = req.body;
-        console.log("create user: " + firstName + " " + lastName + " " + email + " " + password + " " + passwordVerify);
-        if (!firstName || !lastName || !email || !password || !passwordVerify) {
+        console.log("create user: " + userName + " " + email + " " + password + " " + passwordVerify);
+        if (!userName || !email || !password || !passwordVerify) {
             return res
                 .status(400)
                 .json({ errorMessage: "Please enter all required fields." });
@@ -158,8 +158,7 @@ registerUser = async (req, res) => {
         }).status(200).json({
             success: true,
             user: {
-                firstName: savedUser.firstName,
-                lastName: savedUser.lastName,  
+                userName: savedUser.userName,
                 email: savedUser.email              
             }
         })
