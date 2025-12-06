@@ -191,8 +191,8 @@ updatePlaylist = async (req, res) => {
             errorMessage: 'UNAUTHORIZED'
         })
     }
-    const { name, ownerEmail, songs } = req.body;
-    if (!name || !ownerEmail || !songs ) {
+    const { playlistName, ownerEmail, songs } = req.body;
+    if (!playlistName || !ownerEmail || !songs ) {
         return res.status(400).json({ errorMessage: "Some fields missing..."});
     }
     // check if user should be allowed to get this playlist
@@ -203,7 +203,7 @@ updatePlaylist = async (req, res) => {
     if (playlist.userId !== req.userId) {
         return res.status(400).json( {errorMessage: "Incorrect user. Authentication failed."})
     }
-    playlist.playlistName = name;
+    playlist.playlistName = playlistName;
     playlist.email = ownerEmail;
     playlist.songs = songs
     await playlist.save();

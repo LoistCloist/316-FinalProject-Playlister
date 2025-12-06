@@ -89,7 +89,7 @@ loginUser = async (req, res) => {
         res.status(500).send();
     }
 }
-
+// clears the jwt token by setting it to an empty string.
 logoutUser = async (req, res) => {
     res.cookie("token", "", {
         httpOnly: true,
