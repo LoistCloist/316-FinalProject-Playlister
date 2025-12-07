@@ -49,10 +49,10 @@ export default function PlaylistCard({ playlist }) {
           </AccordionActions>
         </AccordionSummary>
         <AccordionDetails>
-          <List sx={{ py: 0 }}>
+          <List sx={{ py: 0, display: 'flex', flexDirection: 'column' }}>
             {playlist.songs && playlist.songs.length > 0 ? (
               playlist.songs.map((song, index) => (
-                <ListItem key={song.songId || song} sx={{ py: 0 }}>
+                <ListItem key={song.songId || song} sx={{ py: 0, width: '100%', display: 'block' }}>
                   <ListItemText 
                     primary={
                       <Typography sx={{ color: 'black' }}>
@@ -63,7 +63,7 @@ export default function PlaylistCard({ playlist }) {
                 </ListItem>
               ))
             ) : (
-              <ListItem sx={{ py: 0 }}>
+              <ListItem sx={{ py: 0, width: '100%', display: 'block' }}>
                 <ListItemText 
                   primary={
                     <Typography sx={{ color: 'black' }}>

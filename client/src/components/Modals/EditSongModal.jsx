@@ -9,8 +9,7 @@ import {
         Toolbar,
         DialogTitle,
         DialogContent,
-        DialogActions,
-        List
+        DialogActions
 } from '@mui/material'
 
 export default function EditSongModal() {
@@ -31,12 +30,12 @@ export default function EditSongModal() {
             <Dialog open={open} onClose={handleCancel} >
                 <DialogTitle>Edit Song</DialogTitle>
                 <DialogContent>
-                    <List>
-                        <TextField label="Title" variant="outlined" />
-                        <TextField label="Artist" variant="outlined" />
-                        <TextField label="Year" variant="outlined" />
-                        <TextField label="YouTube ID" variant="outlined" />
-                    </List>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
+                        <TextField label="Title" variant="outlined" fullWidth />
+                        <TextField label="Artist" variant="outlined" fullWidth />
+                        <TextField label="Year" variant="outlined" fullWidth />
+                        <TextField label="YouTube ID" variant="outlined" fullWidth />
+                    </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button variant="contained" onClick={handleConfirm}>Confirm</Button>
