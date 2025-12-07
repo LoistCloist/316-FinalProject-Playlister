@@ -1,4 +1,4 @@
-import { useContext } from 'react'
+import { useContext, useEffect } from 'react'
 import {
     Grid,
     Stack,
@@ -15,9 +15,18 @@ import {
 import { whiteSelectSx, whiteTextFieldSx } from '../styles';
 import PlaylistCard from '../PlaylistCard'
 import PlaylistStoreContext from '../../stores/playlist_store'
+import AuthContext from '../../auth'
 
 function PlaylistsScreen() {
     const { playlistStore } = useContext(PlaylistStoreContext);
+    const { auth } = useContext(AuthContext);
+    
+    useEffect(() => {
+        // Load user playlists when component mounts or when auth state changes
+        if (playlistStore && playlistStore.loadUserPlaylists && auth.loggedIn && auth.user?.userId) {
+            playlistStore.loadUserPlaylists();
+        }
+    }, [playlistStore, auth.loggedIn, auth.user?.userId]);
     return (
         <>
             <Grid container display="flex" flexDirection="row">

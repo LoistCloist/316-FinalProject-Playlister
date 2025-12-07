@@ -143,13 +143,24 @@ getPlaylists = async (req, res) => {
     
     const playlists = await Playlist.find(playlistQuery);
     
-    // Fetch user avatars for all playlists
-    // don't want to store avatar twice.
+    // Fetch user avatars and populate songs for all playlists
     const playlistsWithAvatars = await Promise.all(
         playlists.map(async (playlist) => {
             const user = await User.findOne({ userId: playlist.userId });
+            
+            // Populate songs with full song objects
+            const songObjects = await Promise.all(
+                (playlist.songs || []).map(async (songId) => {
+                    const song = await Song.findOne({ songId: songId });
+                    return song ? song.toObject() : null;
+                })
+            );
+            // Filter out any null songs (in case a song was deleted)
+            const validSongs = songObjects.filter(song => song !== null);
+            
             return {
                 ...playlist.toObject(),
+                songs: validSongs,
                 userAvatar: user ? user.avatar : null
             };
         })
@@ -175,10 +186,22 @@ getPlaylistById = async (req, res) => {
             errorMessage: "Playlist not found!" 
         })
     }
-    // Fetch user icon (avatar) associated with the playlist's userId
+    // Fetch user icon (avatar) and populate songs
     const user = await User.findOne({ userId: playlist.userId });
+    
+    // Populate songs with full song objects
+    const songObjects = await Promise.all(
+        (playlist.songs || []).map(async (songId) => {
+            const song = await Song.findOne({ songId: songId });
+            return song ? song.toObject() : null;
+        })
+    );
+    // Filter out any null songs (in case a song was deleted)
+    const validSongs = songObjects.filter(song => song !== null);
+    
     const playlistWithAvatar = {
         ...playlist.toObject(),
+        songs: validSongs,
         userAvatar: user ? user.avatar : null
     };
     return res
@@ -213,12 +236,24 @@ getUserPlaylists = async (req, res) => {
     }
     const playlists = await Playlist.find({ playlistId: { $in: user.playlists } });
     
-    // Fetch user avatars for all playlists
+    // Fetch user avatars and populate songs for all playlists
     const playlistsWithAvatars = await Promise.all(
         playlists.map(async (playlist) => {
             const playlistUser = await User.findOne({ userId: playlist.userId });
+            
+            // Populate songs with full song objects
+            const songObjects = await Promise.all(
+                (playlist.songs || []).map(async (songId) => {
+                    const song = await Song.findOne({ songId: songId });
+                    return song ? song.toObject() : null;
+                })
+            );
+            // Filter out any null songs (in case a song was deleted)
+            const validSongs = songObjects.filter(song => song !== null);
+            
             return {
                 ...playlist.toObject(),
+                songs: validSongs,
                 userAvatar: playlistUser ? playlistUser.avatar : null
             };
         })
@@ -239,12 +274,24 @@ getAllPlaylists = async (req, res) => {
     try {
         const allPlaylists = await Playlist.find({});
         
-        // Fetch user avatars for all playlists
+        // Fetch user avatars and populate songs for all playlists
         const playlistsWithAvatars = await Promise.all(
             allPlaylists.map(async (playlist) => {
                 const user = await User.findOne({ userId: playlist.userId });
+                
+                // Populate songs with full song objects
+                const songObjects = await Promise.all(
+                    (playlist.songs || []).map(async (songId) => {
+                        const song = await Song.findOne({ songId: songId });
+                        return song ? song.toObject() : null;
+                    })
+                );
+                // Filter out any null songs (in case a song was deleted)
+                const validSongs = songObjects.filter(song => song !== null);
+                
                 return {
                     ...playlist.toObject(),
+                    songs: validSongs,
                     userAvatar: user ? user.avatar : null
                 };
             })

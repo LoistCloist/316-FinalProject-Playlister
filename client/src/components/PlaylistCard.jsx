@@ -5,7 +5,11 @@ import {
   AccordionDetails, 
   Typography, 
   Button, 
-  Avatar 
+  Avatar,
+  List,
+  ListItem,
+  ListItemText,
+  Box
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
@@ -32,9 +36,11 @@ export default function PlaylistCard({ playlist }) {
           aria-controls="panel1-content"
           id="panel1-header"
         >
-          <Typography component="span">{playlist.playlistName}</Typography>
-          <Typography component="span">{playlist.userName}</Typography>
-          <Avatar src={playlist.userAvatar} />
+          <Avatar src={playlist.userAvatar} sx={{ mr: 2 }} />
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+            <Typography component="span">{playlist.playlistName}</Typography>
+            <Typography component="span">{playlist.userName}</Typography>
+          </Box>
           <AccordionActions>
             <Button onClick={handleDelete}>Delete</Button>
             <Button onClick={handleEdit}>Edit</Button>
@@ -43,8 +49,31 @@ export default function PlaylistCard({ playlist }) {
           </AccordionActions>
         </AccordionSummary>
         <AccordionDetails>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-          malesuada lacus ex, sit amet blandit leo lobortis eget.
+          <List sx={{ py: 0 }}>
+            {playlist.songs && playlist.songs.length > 0 ? (
+              playlist.songs.map((song, index) => (
+                <ListItem key={song.songId || song} sx={{ py: 0 }}>
+                  <ListItemText 
+                    primary={
+                      <Typography sx={{ color: 'black' }}>
+                        {index + 1}. {song.title || 'Unknown Title'} by {song.artist || 'Unknown Artist'} {song.year ? `(${song.year})` : ''}
+                      </Typography>
+                    }
+                  />
+                </ListItem>
+              ))
+            ) : (
+              <ListItem sx={{ py: 0 }}>
+                <ListItemText 
+                  primary={
+                    <Typography sx={{ color: 'black' }}>
+                      No songs in this playlist
+                    </Typography>
+                  }
+                />
+              </ListItem>
+            )}
+          </List>
         </AccordionDetails>
       </Accordion>
     </div>

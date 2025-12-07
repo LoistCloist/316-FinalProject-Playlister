@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import React, { useState, useContext } from 'react'
 import CottageIcon from '@mui/icons-material/Cottage';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import TabSlider from '../TabSlider';
 import AuthContext from '../../auth';
 
@@ -20,6 +20,8 @@ function AppBanner() {
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [view, setView] = useState('playlists');
     const navigate = useNavigate();
+    const location = useLocation();
+    const isWelcomeScreen = location.pathname === '/' || location.pathname === '';
     const handleMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
         // makes currentTarget the element that other components will attach to.
@@ -38,7 +40,7 @@ function AppBanner() {
                 <IconButton id="HomeButton" size="large" edge="start" href="/">
                     <CottageIcon fontSize="large" sx={{color: 'white' }} />
                 </IconButton>
-                {auth.loggedIn && (
+                {auth.loggedIn && !isWelcomeScreen && (
                     <TabSlider 
                         value={view} 
                         onChange={handleViewChange} 

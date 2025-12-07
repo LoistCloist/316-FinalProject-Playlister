@@ -15,7 +15,7 @@ import { whiteSelectSx, whiteTextFieldSx } from '../styles';
 import PlaylistCard from '../PlaylistCard.jsx'
 import EditSongModal from '../Modals/EditSongModal.jsx'
 
-function PlaylistsScreen() {
+function SongCatalogScreen() {
     const handleAddSong = () => {
         
     }
@@ -37,7 +37,7 @@ function PlaylistsScreen() {
                         </Toolbar>
                         <CardMedia component="iframe" sx={{ width: '400px', height: '200px' }}
                             src="https://www.youtube.com/embed/OTg5Bs7AXNU" />
-                            
+        
                     </Stack>
                 </Grid>
                 {/* <Divider orientation='vertical' flexItem sx={{
@@ -66,7 +66,6 @@ function PlaylistsScreen() {
                                 <Typography color="white" alignItems="flex-end" variant="h5" >2 Playlists</Typography>
                             </Toolbar>
                         </Toolbar>
-                        <PlaylistCard />
                         <Button fullWidth={false} onClick={handleAddSong} variant="contained">Add Song</Button>
                     </Box>
                 </Grid>
@@ -74,4 +73,4 @@ function PlaylistsScreen() {
         </>
     )
 }
-export default PlaylistsScreen;
+export default SongCatalogScreen;

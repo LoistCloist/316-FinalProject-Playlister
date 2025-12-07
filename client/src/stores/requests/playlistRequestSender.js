@@ -1,7 +1,8 @@
 import axios from 'axios'
 axios.defaults.withCredentials = true;
 const api = axios.create({
-    baseUrl: 'http://localhost:4000/store',
+    baseURL: 'http://localhost:4000/store',
+    withCredentials: true
 })
 
 export const createPlaylist = (playlistName, userName, email, songs) => {

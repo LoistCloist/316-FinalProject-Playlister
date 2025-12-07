@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from 'react'
 import { jsTPS } from "jstps"
 import AuthContext from '../auth'
+import playlistRequestSender from './requests/playlistRequestSender'
 
 const PlaylistStoreContext = createContext({});
 console.log("created PlaylistStoreContext");
@@ -222,6 +223,23 @@ function PlaylistStoreContextProvider(props) {
         });
     }
 
+    const loadUserPlaylists = async function() {
+        if (!auth.loggedIn || !auth.user?.userId) {
+            console.log("User not logged in, cannot load playlists");
+            return;
+        }
+        try {
+            console.log("Loading playlists for user:", auth.user.userId);
+            const response = await playlistRequestSender.getUserPlaylists(auth.user.userId);
+            if (response.status === 200 && response.data.success) {
+                console.log("Loaded playlists:", response.data.playlists);
+                getAllPlaylists(response.data.playlists || []);
+            }
+        } catch (error) {
+            console.error("Error loading user playlists:", error);
+        }
+    }
+
     const undo = function() {
         tps.undoTransaction();
     }
@@ -245,6 +263,7 @@ function PlaylistStoreContextProvider(props) {
         findPlaylist,
         findPlaylistById,
         getAllPlaylists,
+        loadUserPlaylists,
         undo,
         redo
     };
