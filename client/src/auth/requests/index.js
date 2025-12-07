@@ -41,11 +41,21 @@ export const registerUser = (userName, email, password, passwordVerify, avatar =
         avatar : avatar
     })
 }
+export const editUser = (userName, email, password, passwordVerify, avatar = null) => {
+    return api.put(`/editUser`, {
+        userName : userName,
+        email : email,
+        password : password,
+        passwordVerify : passwordVerify,
+        avatar : avatar
+    })
+}
 const apis = {
     getLoggedIn,
     registerUser,
     loginUser,
-    logoutUser
+    logoutUser,
+    editUser
 }
 
 export default apis

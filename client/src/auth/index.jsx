@@ -10,7 +10,8 @@ const AuthActionType = {
     GET_LOGGED_IN: "GET_LOGGED_IN",
     LOGIN_USER: "LOGIN_USER",
     LOGOUT_USER: "LOGOUT_USER",
-    REGISTER_USER: "REGISTER_USER"
+    REGISTER_USER: "REGISTER_USER",
+    EDIT_USER: "EDIT_USER"
 }
 
 function AuthContextProvider(props) {
@@ -46,6 +47,13 @@ function AuthContextProvider(props) {
                 })
             }
             case AuthActionType.REGISTER_USER: {
+                return setAuth({
+                    user: payload.user,
+                    loggedIn: payload.loggedIn,
+                    errorMessage: payload.errorMessage
+                })
+            }
+            case AuthActionType.EDIT_USER: {
                 return setAuth({
                     user: payload.user,
                     loggedIn: payload.loggedIn,
@@ -135,6 +143,32 @@ function AuthContextProvider(props) {
             navigate("/");
         }
     }
+    
+    const editUser = async function(userName, email, password, passwordVerify, avatar = null) {
+        try {
+            const response = await authRequestSender.editUser(userName, email, password, passwordVerify, avatar);
+            if (response.status === 200) {
+                authReducer({
+                    type: AuthActionType.EDIT_USER,
+                    payload: {
+                        user: response.data.user,
+                        loggedIn: true,
+                        errorMessage: null
+                    }
+                })
+            }
+            navigate("/playlists");
+        } catch(error) {
+            authReducer({
+                type: AuthActionType.EDIT_USER,
+                payload: {
+                    user: authState.user,
+                    loggedIn: authState.loggedIn,
+                    errorMessage: error.response?.data?.errorMessage || "Failed to update account"
+                }
+            })
+        }
+    }
 
     const clearErrorMessage = function() {
         setAuth({
@@ -150,7 +184,8 @@ function AuthContextProvider(props) {
         registerUser,
         loginUser,
         logoutUser,
-        clearErrorMessage
+        clearErrorMessage,
+        editUser
     };
 
     useEffect(() => {

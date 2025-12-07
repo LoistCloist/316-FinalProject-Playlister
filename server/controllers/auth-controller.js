@@ -206,9 +206,112 @@ registerUser = async (req, res) => {
     }
 }
 
+editUser = async (req, res) => {
+    console.log("EDITING USER IN BACKEND");
+    try {
+        // Verify the user is logged in and get their MongoDB _id
+        const mongooseId = auth.verifyUser(req);
+        console.log("Verified mongoose _id:", mongooseId);
+        
+        if (!mongooseId) {
+            console.log("No authenticated user found");
+            return res.status(401).json({
+                errorMessage: "You must be logged in to edit your account."
+            });
+        }
+
+        // Find the logged-in user by their MongoDB _id
+        const loggedInUser = await User.findOne({ _id: mongooseId });
+        console.log("Logged in user found:", loggedInUser ? "yes" : "no");
+        
+        if (!loggedInUser) {
+            console.log("Logged in user not found in database");
+            return res.status(401).json({
+                errorMessage: "User not found."
+            });
+        }
+
+        const { userName, email, password, passwordVerify, avatar } = req.body;
+        console.log("Edit request - userName:", userName, "email:", email);
+        
+        if (!userName || !email || !password || !passwordVerify) {
+            console.log("Missing required fields");
+            return res
+                .status(400)
+                .json({ errorMessage: "Please enter all required fields." });
+        }
+        
+        if (password.length < 8) {
+            console.log("Password too short");
+            return res
+                .status(400)
+                .json({
+                    errorMessage: "Please enter a password of at least 8 characters."
+                });
+        }
+        
+        if (password !== passwordVerify) {
+            console.log("Passwords do not match");
+            return res
+                .status(400)
+                .json({
+                    errorMessage: "Please enter the same password twice."
+                })
+        }
+
+        // Check if email is being changed and if the new email is already taken by another user
+        if (email !== loggedInUser.email) {
+            const emailTaken = await User.findOne({ email: email });
+            if (emailTaken) {
+                console.log("Email already taken by another user");
+                return res.status(400).json({
+                    errorMessage: "An account with this email address already exists."
+                });
+            }
+        }
+
+        // Update the logged-in user's information
+        const saltRounds = 10;
+        const salt = await bcrypt.genSalt(saltRounds);
+        const passwordHash = await bcrypt.hash(password, salt);
+        console.log("Password hash generated");
+        
+        loggedInUser.userName = userName;
+        loggedInUser.email = email;
+        loggedInUser.passwordHash = passwordHash;
+        
+        // Only update avatar if a new one is provided
+        if (avatar !== null && avatar !== undefined) {
+            console.log("Updating avatar");
+            loggedInUser.avatar = avatar;
+        }
+        
+        const savedUser = await loggedInUser.save();
+        console.log("User saved - _id:", savedUser._id, "userId:", savedUser.userId);
+        
+        return res.status(200).json({
+            success: true,
+            user: {
+                userId: savedUser.userId,
+                userName: savedUser.userName,
+                email: savedUser.email,
+                avatar: savedUser.avatar,
+                playlists: savedUser.playlists
+            }
+        })
+    } catch (err) {
+        console.error("=== editUser error ===");
+        console.error("Error message:", err.message);
+        console.error("Error stack:", err.stack);
+        res.status(500).json({
+            errorMessage: "An error occurred while updating your account."
+        });
+    }
+}
 module.exports = {
     getLoggedIn,
     registerUser,
     loginUser,
-    logoutUser
+    logoutUser,
+    editUser
 }
