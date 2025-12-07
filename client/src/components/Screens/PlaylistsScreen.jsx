@@ -50,7 +50,8 @@ function PlaylistsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auth.loggedIn, auth.user?.userId]);
     
-    // Re-sort when playlists array changes (e.g., after update or delete)
+    // Re-sort when playlists array length changes (e.g., after update or delete)
+    // Only watch length to avoid infinite loops from array reference changes
     useEffect(() => {
         if (playlistStore?.playlists && playlistStore?.sortPlaylists) {
             if (playlistStore.playlists.length > 0) {
@@ -59,7 +60,7 @@ function PlaylistsScreen() {
             // Even if empty, the component should re-render to show "No playlists found"
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [playlistStore?.playlists?.length, playlistStore?.playlists]);
+    }, [playlistStore?.playlists?.length]);
     
     const playlistCount = playlistStore?.playlists?.length || 0;
     

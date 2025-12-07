@@ -42,10 +42,8 @@ function PlaylistStoreContextProvider(props) {
         newListCounter: 0,
         listMarkedForDeletion: null
     })
-    console.log("inside usePlaylistStore")
 
     const { auth } = useContext(AuthContext);
-    console.log("auth: " + auth);
 
     const playlistStoreReducer = (action) => {
         const { type, payload } = action;

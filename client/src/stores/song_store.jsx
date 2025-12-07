@@ -34,10 +34,8 @@ function SongStoreContextProvider(props) {
         newSongCounter: 0,
         songs: []
     })
-    console.log("inside useSongStore");
 
     const { auth } = useContext(AuthContext);
-    console.log("auth: " + auth);
 
     const storeReducer = (action) => {
         const { type, payload } = action;
@@ -55,7 +53,7 @@ function SongStoreContextProvider(props) {
                     ...songStore,
                     currentSong: null,
                     newSongCounter: songStore.newSongCounter,
-                    songs: payload.songs,
+                    songs: payload.songs ? [...payload.songs] : []
                 })
             }
             case SongStoreActionType.GET_ALL_PLAYLISTS: {
@@ -67,7 +65,7 @@ function SongStoreContextProvider(props) {
             case SongStoreActionType.GET_USER_SONGS: {
                 return setSongStore({
                     ...songStore,
-                    songs: payload.songs,
+                    songs: payload.songs ? [...payload.songs] : []
                 })
             }
             case SongStoreActionType.HIDE_MODALS: {
@@ -104,6 +102,41 @@ function SongStoreContextProvider(props) {
         });
     }
 
+    const editSong = function(song) {
+        storeReducer({
+            type: SongStoreActionType.EDIT_SONG,
+            payload: { song: song }
+        });
+    }
+
+    const sortSongs = function(sortBy, sortOrder) {
+        const sortedSongs = [...songStore.songs].sort((a, b) => {
+            let aValue = a[sortBy];
+            let bValue = b[sortBy];
+            
+            // Handle string comparison
+            if (typeof aValue === 'string') {
+                aValue = aValue.toLowerCase();
+                bValue = bValue.toLowerCase();
+            }
+            
+            // Compare values
+            let comparison = 0;
+            if (aValue > bValue) {
+                comparison = 1;
+            } else if (aValue < bValue) {
+                comparison = -1;
+            }
+            
+            // Reverse for descending order
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+        storeReducer({
+            type: SongStoreActionType.SORT_SONGS,
+            payload: { songs: sortedSongs }
+        });
+    }
+
     const undo = function() {
         tps.undoTransaction();
     }
@@ -134,17 +167,19 @@ function SongStoreContextProvider(props) {
 
     // Fetch user songs on startup when user is logged in
     useEffect(() => {
-        if (auth.loggedIn && auth.user) {
+        if (auth.loggedIn && auth.user?.userId) {
             loadUserSongs();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [auth.loggedIn, auth.user]);
+    }, [auth.loggedIn, auth.user?.userId]);
 
     // Combine state and methods without mutating the state object
     const songStoreWithMethods = {
         ...songStore,
         addSongToCatalog,
         hideModals,
+        editSong,
+        sortSongs,
         undo,
         redo,
         canAddNewSong,

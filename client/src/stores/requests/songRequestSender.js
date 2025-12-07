@@ -13,8 +13,12 @@ export const createSong = ( title, artist, year, youtubeId, ownerEmail ) => {
         ownerEmail: ownerEmail
     })
 }
-export const getTargetSongs = (id) => {
-    return api.get(`/songs/${id}`);
+export const getTargetSongs = (title, artist, year) => {
+    const params = {};
+    if (title) params.title = title;
+    if (artist) params.artist = artist;
+    if (year) params.year = year;
+    return api.get('/songs', { params });
 }
 export const getSongById = (id) => {
     return api.get(`/songs/${id}`);
@@ -36,10 +40,18 @@ export const getUserSongs = (userId) => {
 export const deleteSongById = (id) => {
     return api.delete(`/playlist/${id}`)
 }
+export const searchSongs = (title, artist, year) => {
+    const params = {};
+    if (title) params.title = title;
+    if (artist) params.artist = artist;
+    if (year) params.year = year;
+    return api.get('/songs', { params });
+}
 
 const apis = {
     createSong,
     getTargetSongs,
+    searchSongs,
     getSongById,
     editSongById,
     getAllSongsInPlaylist,

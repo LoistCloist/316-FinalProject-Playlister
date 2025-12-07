@@ -55,8 +55,12 @@ export default function PlaylistCard({ playlist }) {
         <AccordionDetails>
           <List sx={{ py: 0, display: 'flex', flexDirection: 'column' }}>
             {playlist.songs && playlist.songs.length > 0 ? (
-              playlist.songs.map((song, index) => (
-                <ListItem key={song.songId || song} sx={{ py: 0, width: '100%', display: 'block' }}>
+              playlist.songs.map((song, index) => {
+                // Handle both song objects and songId strings
+                const songId = typeof song === 'string' ? song : (song.songId || song);
+                // Use index in key to ensure uniqueness even if same song appears multiple times
+                return (
+                <ListItem key={`${songId}-${index}`} sx={{ py: 0, width: '100%', display: 'block' }}>
                   <ListItemText 
                     primary={
                       <Typography sx={{ color: 'black' }}>
@@ -65,7 +69,8 @@ export default function PlaylistCard({ playlist }) {
                     }
                   />
                 </ListItem>
-              ))
+                );
+              })
             ) : (
               <ListItem sx={{ py: 0, width: '100%', display: 'block' }}>
                 <ListItemText 

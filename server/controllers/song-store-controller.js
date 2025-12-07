@@ -53,7 +53,7 @@ getTargetSongs = async (req, res) => {
             errorMessages: 'UNAUTHORIZED'
         })
     }
-    const { title, artist, year } = req.body
+    const { title, artist, year } = req.query || {};
     if (!title && !artist && !year) {
         return res.status(400).json({ errorMessage: "Please include at least one search field."});
     }

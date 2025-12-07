@@ -5,9 +5,16 @@ const TabSlider = ({ value, onChange, options = [] }) => {
   const [indicatorStyle, setIndicatorStyle] = useState({});
   const tabRefs = useRef({});
   const containerRef = useRef(null);
+  const prevValuesRef = useRef({ left: '', width: '' });
 
   useEffect(() => {
+    let timeoutId;
+    let rafId;
+    let isMounted = true;
+    
     const updateIndicator = () => {
+      if (!isMounted) return;
+      
       const activeTab = tabRefs.current[value];
       const container = containerRef.current;
       
@@ -15,23 +22,37 @@ const TabSlider = ({ value, onChange, options = [] }) => {
         const containerRect = container.getBoundingClientRect();
         const tabRect = activeTab.getBoundingClientRect();
         
-        setIndicatorStyle({
-          left: `${tabRect.left - containerRect.left}px`,
-          width: `${tabRect.width}px`,
-          opacity: 1,
-        });
+        const newLeft = `${tabRect.left - containerRect.left}px`;
+        const newWidth = `${tabRect.width}px`;
+        
+        // Only update if the values actually changed to prevent infinite loops
+        if (prevValuesRef.current.left !== newLeft || prevValuesRef.current.width !== newWidth) {
+          prevValuesRef.current = { left: newLeft, width: newWidth };
+          setIndicatorStyle({
+            left: newLeft,
+            width: newWidth,
+            opacity: 1,
+          });
+        }
       }
     };
 
-    updateIndicator();
+    // Use requestAnimationFrame to ensure DOM is ready
+    rafId = requestAnimationFrame(() => {
+      if (isMounted) {
+        updateIndicator();
+        // Also update after a small delay to catch any layout changes
+        timeoutId = setTimeout(updateIndicator, 10);
+      }
+    });
+    
     window.addEventListener('resize', updateIndicator);
     
-    // Small delay to ensure DOM is ready
-    const timeoutId = setTimeout(updateIndicator, 0);
-    
     return () => {
+      isMounted = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      if (timeoutId) clearTimeout(timeoutId);
       window.removeEventListener('resize', updateIndicator);
-      clearTimeout(timeoutId);
     };
   }, [value]);
 
@@ -94,4 +115,3 @@ const TabSlider = ({ value, onChange, options = [] }) => {
 };
 
 export default TabSlider;
-

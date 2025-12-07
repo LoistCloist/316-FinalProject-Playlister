@@ -29,6 +29,7 @@ import AuthContext from '../../auth';
 import playlistRequestSender from '../../stores/requests/playlistRequestSender';
 import songRequestSender from '../../stores/requests/songRequestSender';
 import EditSongModal from './EditSongModal';
+import { useNavigate } from 'react-router-dom';
 
 const CurrentModal = {
     NONE: "NONE",
@@ -39,7 +40,7 @@ export default function EditPlaylistModal() {
     const { playlistStore } = useContext(PlaylistStoreContext);
     const { songStore } = useContext(SongStoreContext);
     const { auth } = useContext(AuthContext);
-    
+    const navigate = useNavigate();
     const [playlistName, setPlaylistName] = useState('');
     const [songs, setSongs] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -164,29 +165,7 @@ export default function EditPlaylistModal() {
     };
 
     const handleAddSong = () => {
-        setShowSongSelector(true);
-    };
-
-    const handleSelectSong = (song) => {
-        // Check if song is already in playlist
-        if (songs.some(s => s.songId === song.songId)) {
-            alert('Song is already in the playlist');
-            return;
-        }
-        setSongs([...songs, song]);
-        setShowSongSelector(false);
-    };
-
-    const handleEditSong = (song) => {
-        // Open EditSongModal by dispatching EDIT_SONG action
-        // Note: This requires the songStore to have an editSong method
-        // For now, we'll trigger it via the songStore reducer pattern
-        if (songStore && songStore.currentModal !== undefined) {
-            // We'll need to add an editSong method to songStore or handle this differently
-            // For now, just log - the EditSongModal integration can be added later
-            console.log('Edit song:', song);
-            // TODO: Integrate with EditSongModal properly
-        }
+        navigate('/songs');
     };
 
     const handleDuplicateSong = (song) => {
@@ -231,14 +210,14 @@ export default function EditPlaylistModal() {
                 fullWidth
                 PaperProps={{
                     sx: {
-                        backgroundColor: '#e8f5e9', // Light green background
+                        backgroundColor: '#1a1a1a', // Dark background to match app
                         minHeight: '500px'
                     }
                 }}
             >
                 <DialogTitle 
                     sx={{ 
-                        backgroundColor: '#2e7d32', // Dark green
+                        backgroundColor: '#285238', // Primary green from theme
                         color: 'white',
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -303,7 +282,9 @@ export default function EditPlaylistModal() {
                                             sx={{ 
                                                 mb: 1, 
                                                 p: 1,
-                                                backgroundColor: '#fff9c4' // Light yellow
+                                                backgroundColor: '#2a2a2a', // Dark gray to match app theme
+                                                border: '1px solid #285238', // Primary green border
+                                                color: 'white'
                                             }}
                                         >
                                             <ListItem
@@ -340,7 +321,7 @@ export default function EditPlaylistModal() {
                                             >
                                                 <ListItemText
                                                     primary={
-                                                        <Typography variant="body1">
+                                                        <Typography variant="body1" sx={{ color: 'white' }}>
                                                             {song.title || 'Unknown Title'} by {song.artist || 'Unknown Artist'} 
                                                             {song.year ? ` (${song.year})` : ''}
                                                         </Typography>

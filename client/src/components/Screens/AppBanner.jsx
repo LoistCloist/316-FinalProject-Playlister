@@ -8,7 +8,7 @@ import {
     Box,
     Typography
 } from "@mui/material";
-import React, { useState, useContext } from 'react'
+import React, { useContext } from 'react'
 import CottageIcon from '@mui/icons-material/Cottage';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import TabSlider from '../TabSlider';
@@ -18,10 +18,14 @@ import AuthContext from '../../auth';
 function AppBanner() {
     const { auth } = useContext(AuthContext);
     const [anchorEl, setAnchorEl] = React.useState(null);
-    const [view, setView] = useState('playlists');
     const navigate = useNavigate();
     const location = useLocation();
     const isWelcomeScreen = location.pathname === '/' || location.pathname === '';
+    
+    // Derive view directly from location
+    const view = location.pathname === '/songs' ? 'songs' : 
+                 location.pathname === '/playlists' ? 'playlists' : 'playlists';
+    
     const handleMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
         // makes currentTarget the element that other components will attach to.
@@ -29,9 +33,9 @@ function AppBanner() {
     const handleMenuClose = () => {
         setAnchorEl(null);
     }
-    const handleViewChange = (view) => {
-        setView(view);
-        navigate(view);
+    const handleViewChange = (newView) => {
+        // Navigate to the new route - view will update automatically from location
+        navigate(`/${newView}`);
     }
     return (
         <AppBar>
