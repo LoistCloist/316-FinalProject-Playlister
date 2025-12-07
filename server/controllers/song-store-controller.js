@@ -131,18 +131,35 @@ getAllSongsInPlaylist = async (req, res) => {
             errorMessages: "Invalid playlist id or not included."
         })
     }
-    const playlist = await Playlist.findOne({ playlistId: req.params.id});
-    if (!playlist) {
-        return res.status(404).json({
-            errorMessage: "getAllSongsInPlaylist - Could not find playlist."
+    try {
+        const playlist = await Playlist.findOne({ playlistId: playlistId });
+        if (!playlist) {
+            return res.status(404).json({
+                errorMessage: "getAllSongsInPlaylist - Could not find playlist."
+            })
+        }
+        if (!playlist.songs || playlist.songs.length === 0) {
+            return res.status(200).json({ 
+                success: true, 
+                songs: [] 
+            });
+        }
+        
+        // Fetch all song objects using the song IDs from the playlist
+        const songs = await Song.find({ 
+            songId: { $in: playlist.songs } 
+        });
+        
+        return res.status(200).json({ 
+            success: true, 
+            songs: songs 
+        });
+    } catch (error) {
+        console.error('Error in getAllSongsInPlaylist:', error);
+        return res.status(500).json({
+            errorMessage: "Error fetching songs from playlist."
         })
     }
-    if (!playlist.songs) {
-        return res.status(404).json({
-            errorMessage: "getAllSongsInPlaylist - Playlist has no songs."
-        })
-    }
-    return res.status(200).json({ success: true, songs: playlist.songs });
 }
 
 getUserSongs = async (req, res) => {
