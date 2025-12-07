@@ -125,7 +125,7 @@ getAllSongsInPlaylist = async (req, res) => {
             errorMessages: 'UNAUTHORIZED'
         })
     }
-    const playlistId = req.params.id;
+    const playlistId = req.params.playlistId;
     if (!playlistId) {
         return res.status(400).json({
             errorMessages: "Invalid playlist id or not included."
