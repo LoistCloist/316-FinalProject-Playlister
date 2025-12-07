@@ -1,7 +1,7 @@
 import axios from 'axios'
 axios.defaults.withCredentials = true;
 const api = axios.create({
-    baseUrl: 'http://localhost:4000/store',
+    baseURL: 'http://localhost:4000/store',
 })
 
 export const createSong = ( title, artist, year, youtubeId, ownerEmail ) => {
@@ -30,8 +30,8 @@ export const editSongById = ( songId, title, artist, year, youtubeId ) => {
 export const getAllSongsInPlaylist = (userid) => {
     return api.get(`userplaylist/${userid}`)
 }
-export const getUserSongs = () => {
-    return api.get(`/songs/all`)
+export const getUserSongs = (userId) => {
+    return api.get(`/userSongs/${userId}`)
 }
 export const deleteSongById = (id) => {
     return api.delete(`/playlist/${id}`)

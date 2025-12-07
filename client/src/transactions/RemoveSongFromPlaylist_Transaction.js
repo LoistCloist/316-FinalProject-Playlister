@@ -8,7 +8,7 @@ export default class RemoveSongFromPlaylist_Transaction extends jsTPS_Transactio
     }
 
     executeDo() {
-        this.removeSongFromPlaylist(this.songId);
+        this.store.removeSongFromPlaylist(this.songId);
     }
     
     executeUndo() {

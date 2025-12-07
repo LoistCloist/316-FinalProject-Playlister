@@ -8,14 +8,15 @@ import {
     Box,
     Typography
 } from "@mui/material";
-import * as React from 'react'
+import React, { useState, useContext } from 'react'
 import CottageIcon from '@mui/icons-material/Cottage';
-import { SegmentedControl } from '@mantine/core';
-import {useState} from 'react'
 import { Link, useNavigate } from 'react-router-dom';
+import TabSlider from '../TabSlider';
+import AuthContext from '../../auth';
 
 
 function AppBanner() {
+    const { auth } = useContext(AuthContext);
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [view, setView] = useState('playlists');
     const navigate = useNavigate();
@@ -37,10 +38,16 @@ function AppBanner() {
                 <IconButton id="HomeButton" size="large" edge="start" href="/">
                     <CottageIcon fontSize="large" sx={{color: 'white' }} />
                 </IconButton>
-                <SegmentedControl value={view} onChange={handleViewChange} data={[
-                    { label: 'Playlists', value: 'playlists' },
-                    { label: 'Songs', value: 'songs' },
-                ]} />
+                {auth.loggedIn && (
+                    <TabSlider 
+                        value={view} 
+                        onChange={handleViewChange} 
+                        options={[
+                            { label: 'Playlists', value: 'playlists' },
+                            { label: 'Songs', value: 'songs' },
+                        ]} 
+                    />
+                )}
                 <Typography component="h2" sx={{
                     display: 'flex',
                     justifyContent: 'center',
@@ -50,7 +57,7 @@ function AppBanner() {
                 </Typography>
                 <Box id="ProfileMenu" sx={{ marginLeft: 'auto' }}> 
                     <IconButton id="avatar-button" size="small" onClick={handleMenuOpen}>
-                        <Avatar alt="Whatever" src="../../assets/react.svg" />
+                        <Avatar alt={auth.user?.userName || "User"} src={auth.user?.avatar || "../../assets/react.svg"} />
                     </IconButton>
                     <Menu id="menu-appbar" onClose={handleMenuClose}
                             anchorEl={anchorEl}
@@ -64,10 +71,20 @@ function AppBanner() {
                             horizontal: 'right',
                             }}
                             open={Boolean(anchorEl)}>
-                            <MenuItem component={Link} to='/login'> Login </MenuItem>
-                            <MenuItem component={Link} to="/register"> Create Account </MenuItem>
-                            <MenuItem component={Link} to="/editAccount"> Edit Account </MenuItem>
-                            <MenuItem> Logout </MenuItem>
+                            {auth.loggedIn ? (
+                                [
+                                    <MenuItem key="edit" component={Link} to="/editAccount"> Edit Account </MenuItem>,
+                                    <MenuItem key="logout" onClick={() => {
+                                        auth.logoutUser();
+                                        handleMenuClose();
+                                    }}> Logout </MenuItem>
+                                ]
+                            ) : (
+                                [
+                                    <MenuItem key="login" component={Link} to='/login' onClick={handleMenuClose}> Login </MenuItem>,
+                                    <MenuItem key="register" component={Link} to="/register" onClick={handleMenuClose}> Create Account </MenuItem>
+                                ]
+                            )}
                     </Menu>
                 </Box>
             </Toolbar>

@@ -1,18 +1,20 @@
 // WARNING: This will delete ALL users, playlists, and songs!
 const dotenv = require('dotenv');
 dotenv.config();
-const db = require('../db');
+const mongoose = require('mongoose');
 const User = require('../schemas/user-model');
 const Playlist = require('../schemas/playlist-model');
 const Song = require('../schemas/song-model');
 
 async function wipeDatabase() {
     try {
-        await new Promise((resolve, reject) => {
-            db.once('open', resolve);
-            db.on('error', reject);
-        });
-        console.log('Connected to database');
+        // Connect to database if not already connected
+        if (mongoose.connection.readyState === 1) {
+            console.log('Already connected to database');
+        } else {
+            await mongoose.connect(process.env.DB_CONNECT);
+            console.log('Connected to database');
+        }
 
         console.log('Starting database wipe...');
         

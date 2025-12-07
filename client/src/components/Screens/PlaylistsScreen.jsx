@@ -1,3 +1,4 @@
+import { useContext } from 'react'
 import {
     Grid,
     Stack,
@@ -8,18 +9,19 @@ import {
     Button,
     MenuItem,
     Select,
-    Box
+    Box,
+    List
 } from '@mui/material'
 import { whiteSelectSx, whiteTextFieldSx } from '../styles';
+import PlaylistCard from '../PlaylistCard'
+import PlaylistStoreContext from '../../stores/playlist_store'
 
 function PlaylistsScreen() {
+    const { playlistStore } = useContext(PlaylistStoreContext);
     return (
         <>
-            <Grid container >
-                <Grid item xs={12} md={6}
-                    sx={{
-                        flexGrow: 1
-                    }}>
+            <Grid container display="flex" flexDirection="row">
+                <Grid item xs={6} md={6} display="Flex" flexDirection="row">
                     <Stack sx={{ width: "100%" }} alignItems="flex-start" spacing={1.5} >
                         <Typography color="textLight" variant="h2"> Playlists </Typography>
                         <TextField label="by PlaylistName" variant="outlined" sx={whiteTextFieldSx} />
@@ -36,13 +38,11 @@ function PlaylistsScreen() {
                 <Divider orientation='vertical' flexItem sx={{
                     borderColor: 'white'
                 }} />
-                <Grid item xs={12} md={6} sx={{
-                            flexGrow: 1,
+                <Grid item xs={6} md={6} sx={{
                             display: "flex",
-                            justifyContent: "flex-end",
-                            alignItems: "flex-start",
+                            flexDirection: "column"
                 }}>
-                    <Box display="flex" flexDirection="row">
+                    <Box flexDirection="column" sx={{ display: "flex"}}>
                         <Toolbar sx={{ gap: 1}} alignItems="flex-start">
                             <Typography color="textLight" sx={{ p: 2}}>Sort: </Typography>
                             <Select displayEmpty sx={whiteSelectSx}>
@@ -56,7 +56,15 @@ function PlaylistsScreen() {
                             </Select>
                         </Toolbar>
                         <Typography color="white" alignItems="flex-end" variant="h5" >2 Playlists</Typography>
+                        <List id="playlist-cards" sx={{overflow: 'scroll'}}>
+                            {
+                                playlistStore?.playlists?.map((playlist) => (
+                                    <PlaylistCard key={playlist.playlistId} playlist={playlist} />
+                                ))
+                            }
+                        </List>
                     </Box>
+                    <Button variant="contained">Add Playlist</Button>
                 </Grid>
             </Grid>
         </>

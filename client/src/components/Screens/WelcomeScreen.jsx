@@ -7,8 +7,6 @@ function WelcomeScreen() {
             <Button variant="contained">Continue as Guest</Button>
             <Button variant="contained" href="/login">Login</Button>
             <Button variant="contained" href="/register">Create Account</Button>
-            <Button variant="contained" href="/playlists">Playlists</Button>
-            <Button variant="contained" href="/songs">Songs</Button>
         </div>
     )
 }

@@ -5,8 +5,14 @@ const { randomUUID } = require('crypto');
 
 getLoggedIn = async (req, res) => {
     try {
-        let userId = auth.verifyUser(req);
-        if (!userId) {
+        console.log("getLoggedIn called");
+        console.log("Cookies received:", req.cookies);
+        console.log("Token cookie:", req.cookies.token);
+        // verifyUser returns MongoDB _id (document ID), not the UUID userId
+        let mongooseId = auth.verifyUser(req);
+        console.log("Verified mongoose _id:", mongooseId);
+        if (!mongooseId) {
+            console.log("No mongoose _id found, returning loggedIn: false");
             return res.status(200).json({
                 loggedIn: false,
                 user: null,
@@ -14,10 +20,10 @@ getLoggedIn = async (req, res) => {
             })
         }
 
-        const loggedInUser = await User.findOne({ _id: userId });
-        console.log("loggedInUser: " + loggedInUser);
+        const loggedInUser = await User.findOne({ _id: mongooseId });
+        console.log("loggedInUser found:", loggedInUser ? "yes" : "no");
 
-        return res.status(200).json({
+        const response = {
             loggedIn: true,
             user: {
                 userId: loggedInUser.userId,
@@ -26,27 +32,42 @@ getLoggedIn = async (req, res) => {
                 avatar: loggedInUser.avatar,
                 playlists: loggedInUser.playlists
             }
-        })
+        };
+        console.log("Sending getLoggedIn response:", JSON.stringify(response));
+        return res.status(200).json(response)
     } catch (err) {
-        console.log("err: " + err);
-        res.json(false);
+        console.log("getLoggedIn error: " + err);
+        console.log("Error stack:", err.stack);
+        return res.status(200).json({
+            loggedIn: false,
+            user: null,
+            errorMessage: err.message
+        });
     }
 }
 
 loginUser = async (req, res) => {
-    console.log("loginUser");
+    console.log("=== loginUser called ===");
     try {
         const { email, password } = req.body;
+        console.log("Login attempt - email:", email);
+        console.log("Login attempt - password provided:", password ? "yes" : "no");
 
         if (!email || !password) {
+            console.log("Missing required fields - email:", !!email, "password:", !!password);
             return res
                 .status(400)
                 .json({ errorMessage: "Please enter all required fields." });
         }
 
         const existingUser = await User.findOne({ email: email });
-        console.log("existingUser: " + existingUser);
+        console.log("User lookup result:", existingUser ? "found" : "not found");
+        if (existingUser) {
+            console.log("Found user - _id:", existingUser._id, "userId:", existingUser.userId, "userName:", existingUser.userName);
+        }
+        
         if (!existingUser) {
+            console.log("User not found with email:", email);
             return res
                 .status(401)
                 .json({
@@ -54,10 +75,12 @@ loginUser = async (req, res) => {
                 })
         }
 
-        console.log("provided password: " + password);
+        console.log("Comparing password...");
         const passwordCorrect = await bcrypt.compare(password, existingUser.passwordHash);
+        console.log("Password comparison result:", passwordCorrect ? "correct" : "incorrect");
+        
         if (!passwordCorrect) {
-            console.log("Incorrect password");
+            console.log("Incorrect password for user:", email);
             return res
                 .status(401)
                 .json({
@@ -65,15 +88,12 @@ loginUser = async (req, res) => {
                 })
         }
 
-        // LOGIN THE USER
+        // LOGIN THE USER - use MongoDB _id (document ID) for JWT token
+        console.log("Password correct, generating token with _id:", existingUser._id);
         const token = auth.signToken(existingUser._id);
-        console.log(token);
+        console.log("Token generated:", token ? "success" : "failed");
 
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: true
-        }).status(200).json({
+        const responseData = {
             success: true,
             user: {
                 userId: existingUser.userId,
@@ -82,10 +102,22 @@ loginUser = async (req, res) => {
                 avatar: existingUser.avatar,
                 playlists: existingUser.playlists          
             }
-        })
+        };
+        console.log("Sending login response:", JSON.stringify(responseData));
+        console.log("Setting cookie with token");
+        
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false, // Set to false for localhost (HTTP), true for production (HTTPS)
+            sameSite: "lax" // Use "lax" for localhost
+        }).status(200).json(responseData);
+        
+        console.log("=== loginUser completed successfully ===");
 
     } catch (err) {
-        console.error(err);
+        console.error("=== loginUser error ===");
+        console.error("Error message:", err.message);
+        console.error("Error stack:", err.stack);
         res.status(500).send();
     }
 }
@@ -94,8 +126,8 @@ logoutUser = async (req, res) => {
     res.cookie("token", "", {
         httpOnly: true,
         expires: new Date(0),
-        secure: true,
-        sameSite: "none"
+        secure: false, // Set to false for localhost (HTTP), true for production (HTTPS)
+        sameSite: "lax" // Use "lax" for localhost
     }).send();
 }
 
@@ -142,24 +174,27 @@ registerUser = async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
         console.log("passwordHash: " + passwordHash);
 
-        const userId = randomUUID();
-        const newUser = new User({ userId, userName, email, passwordHash, avatar});
+        const userId = randomUUID(); // UUID for user identification
+        const newUser = new User({ userId, userName, email, passwordHash, avatar: avatar || ''});
         const savedUser = await newUser.save();
-        console.log("new user saved: " + savedUser._id);
+        console.log("new user saved - _id:", savedUser._id, "userId:", savedUser.userId);
 
-        // LOGIN THE USER
+        // LOGIN THE USER - use MongoDB _id (document ID) for JWT token
         const token = auth.signToken(savedUser._id);
         console.log("token:" + token);
 
-        await res.cookie("token", token, {
+        res.cookie("token", token, {
             httpOnly: true,
-            secure: true,
-            sameSite: "none"
+            secure: false, // Set to false for localhost (HTTP), true for production (HTTPS)
+            sameSite: "lax" // Use "lax" for localhost, "none" requires secure: true
         }).status(200).json({
             success: true,
             user: {
+                userId: savedUser.userId, // UUID
                 userName: savedUser.userName,
-                email: savedUser.email              
+                email: savedUser.email,
+                avatar: savedUser.avatar,
+                playlists: savedUser.playlists
             }
         })
 

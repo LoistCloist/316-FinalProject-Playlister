@@ -8,20 +8,23 @@ import LoginScreen from './components/Screens/LoginScreen'
 import EditAccountScreen from './components/Screens/EditAccountScreen'
 import PlaylistsScreen from './components/Screens/PlaylistsScreen'
 import SongCatalogScreen from './components/Screens/SongCatalogScreen'
+import { AuthContextProvider } from './auth'
 
 function App() {
   return (
     <>
     <BrowserRouter>
-      <AppBanner />
-      <Routes>
-        <Route path="/register" element={<CreateAccountScreen />} />
-        <Route path="/login" element={<LoginScreen />} />
-        <Route path="/editAccount" element={<EditAccountScreen />} />
-        <Route path="/playlists" element={<PlaylistsScreen />} />
-        <Route path="/songs" element={<SongCatalogScreen />} />
-        <Route path="*" element={<WelcomeScreen />} />
-      </Routes>
+      <AuthContextProvider>
+        <AppBanner />
+        <Routes>
+          <Route path="/register" element={<CreateAccountScreen />} />
+          <Route path="/login" element={<LoginScreen />} />
+          <Route path="/editAccount" element={<EditAccountScreen />} />
+          <Route path="/playlists" element={<PlaylistsScreen />} />
+          <Route path="/songs" element={<SongCatalogScreen />} />
+          <Route path="*" element={<WelcomeScreen />} />
+        </Routes>
+      </AuthContextProvider>
     </BrowserRouter>
     </>
   )

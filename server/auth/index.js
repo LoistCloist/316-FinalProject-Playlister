@@ -32,13 +32,17 @@ function authManager() {
     verifyUser = (req) => {
         try {
             const token = req.cookies.token;
+            console.log("verifyUser - token from cookies:", token ? "exists" : "missing");
             if (!token) {
+                console.log("verifyUser - no token found");
                 return null;
             }
 
             const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+            console.log("verifyUser - decoded token userId:", decodedToken.userId);
             return decodedToken.userId;
         } catch (err) {
+            console.log("verifyUser - error verifying token:", err.message);
             return null;
         }
     }
