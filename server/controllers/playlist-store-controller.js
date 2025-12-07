@@ -142,9 +142,22 @@ getPlaylists = async (req, res) => {
     }
     
     const playlists = await Playlist.find(playlistQuery);
+    
+    // Fetch user avatars for all playlists
+    // don't want to store avatar twice.
+    const playlistsWithAvatars = await Promise.all(
+        playlists.map(async (playlist) => {
+            const user = await User.findOne({ userId: playlist.userId });
+            return {
+                ...playlist.toObject(),
+                userAvatar: user ? user.avatar : null
+            };
+        })
+    );
+    
     return res.status(200).json({ 
         success: true, 
-        playlists: playlists || [] 
+        playlists: playlistsWithAvatars || [] 
     });
 }
 
@@ -162,9 +175,15 @@ getPlaylistById = async (req, res) => {
             errorMessage: "Playlist not found!" 
         })
     }
+    // Fetch user icon (avatar) associated with the playlist's userId
+    const user = await User.findOne({ userId: playlist.userId });
+    const playlistWithAvatar = {
+        ...playlist.toObject(),
+        userAvatar: user ? user.avatar : null
+    };
     return res
             .status(200)
-            .json({ success: true, playlist: playlist })
+            .json({ success: true, playlist: playlistWithAvatar })
 }
 // this method might need to check if the one making the requests matches the parameter id.
 getUserPlaylists = async (req, res) => {
@@ -193,9 +212,21 @@ getUserPlaylists = async (req, res) => {
         })
     }
     const playlists = await Playlist.find({ playlistId: { $in: user.playlists } });
+    
+    // Fetch user avatars for all playlists
+    const playlistsWithAvatars = await Promise.all(
+        playlists.map(async (playlist) => {
+            const playlistUser = await User.findOne({ userId: playlist.userId });
+            return {
+                ...playlist.toObject(),
+                userAvatar: playlistUser ? playlistUser.avatar : null
+            };
+        })
+    );
+    
     return res.status(200).json({
         success: true,
-        playlists: playlists
+        playlists: playlistsWithAvatars
     })
 }
 
@@ -207,9 +238,21 @@ getAllPlaylists = async (req, res) => {
     }
     try {
         const allPlaylists = await Playlist.find({});
+        
+        // Fetch user avatars for all playlists
+        const playlistsWithAvatars = await Promise.all(
+            allPlaylists.map(async (playlist) => {
+                const user = await User.findOne({ userId: playlist.userId });
+                return {
+                    ...playlist.toObject(),
+                    userAvatar: user ? user.avatar : null
+                };
+            })
+        );
+        
         return res.status(200).json({ 
             success: true, 
-            playlists: allPlaylists || [] 
+            playlists: playlistsWithAvatars || [] 
         });
     } catch (error) {
         console.error("Error getting all playlists:", error);
