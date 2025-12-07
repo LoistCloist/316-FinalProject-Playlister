@@ -12,14 +12,18 @@ import {
   Box
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-
+import PlaylistStoreContext from '../stores/playlist_store';
+import { useContext } from 'react';
 
 export default function PlaylistCard({ playlist }) {
+    const { playlistStore } = useContext(PlaylistStoreContext);
     const handleDelete = (event) => {
         event.stopPropagation();
+        playlistStore.markListForDeletion(playlist);
     }
     const handleEdit = (event) => {
         event.stopPropagation();
+        playlistStore.editPlaylist(playlist);
     }    
     const handleCopy = (event) => {
         event.stopPropagation();

@@ -25,7 +25,7 @@ const tps = new jsTPS();
 
 const CurrentModal = {
     NONE: "NONE",
-    VERIFY_DELETE_LIST: "VERIFY_DELETE_LIST",
+    DELETE_PLAYLIST_MODAL: "DELETE_PLAYLIST_MODAL",
     VERIFY_REMOVE_sONG_MODAL: "VERIFY_REMOVE_SONG_MODAL",
     PLAY_PLAYLIST_MODAL: "PLAY_PLAYLIST_MODAL",
     EDIT_SONG_MODAL: "EDIT_SONG_MODAL",
@@ -62,7 +62,8 @@ function PlaylistStoreContextProvider(props) {
             case PlaylistStoreActionType.MARK_LIST_FOR_DELETION: {
                 return setPlaylistStore({
                     ...playlistStore,
-                    currentModal: CurrentModal.VERIFY_DELETE_LIST,
+                    currentModal: CurrentModal.DELETE_PLAYLIST_MODAL,
+                    currentList: payload.list,
                     listMarkedForDeletion: payload.list
                 })
             }
@@ -102,7 +103,7 @@ function PlaylistStoreContextProvider(props) {
             case PlaylistStoreActionType.DELETE_PLAYLIST: {
                 return setPlaylistStore({
                     ...playlistStore,
-                    currentModal: CurrentModal.VERIFY_DELETE_LIST,
+                    currentModal: CurrentModal.DELETE_PLAYLIST_MODAL,
                     listMarkedForDeletion: payload.list
                 })
             }
@@ -132,7 +133,7 @@ function PlaylistStoreContextProvider(props) {
                 return setPlaylistStore({
                     ...playlistStore,
                     currentModal: CurrentModal.NONE,
-                    playlists: payload.playlists
+                    playlists: payload.playlists ? [...payload.playlists] : []
                 })
             }
             default:
@@ -174,10 +175,31 @@ function PlaylistStoreContextProvider(props) {
         });
     }
 
-    const sortPlaylists = function(playlists) {
+    const sortPlaylists = function(sortBy, sortOrder) {
+        const sortedPlaylists = [...playlistStore.playlists].sort((a, b) => {
+            let aValue = a[sortBy];
+            let bValue = b[sortBy];
+            
+            // Handle string comparison
+            if (typeof aValue === 'string') {
+                aValue = aValue.toLowerCase();
+                bValue = bValue.toLowerCase();
+            }
+            
+            // Compare values
+            let comparison = 0;
+            if (aValue > bValue) {
+                comparison = 1;
+            } else if (aValue < bValue) {
+                comparison = -1;
+            }
+            
+            // Reverse for descending order
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
         playlistStoreReducer({
             type: PlaylistStoreActionType.SORT_PLAYLISTS,
-            payload: { playlists: playlists }
+            payload: { playlists: sortedPlaylists }
         });
     }
 
@@ -188,11 +210,31 @@ function PlaylistStoreContextProvider(props) {
         });
     }
 
-    const deletePlaylist = function(list) {
-        playlistStoreReducer({
-            type: PlaylistStoreActionType.DELETE_PLAYLIST,
-            payload: { list: list }
-        });
+    const deletePlaylist = async function(list) {
+        if (!list || !list.playlistId) {
+            console.error('Cannot delete playlist: invalid playlist data');
+            return;
+        }
+        try {
+            const response = await playlistRequestSender.deletePlaylistById(list.playlistId);
+            if (response.status === 200 && response.data.success) {
+                // Hide modal first
+                playlistStoreReducer({
+                    type: PlaylistStoreActionType.HIDE_MODALS,
+                    payload: {}
+                });
+                // Reload playlists after successful deletion
+                await loadUserPlaylists();
+                // Small delay to ensure store updates before component re-renders
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } else {
+                console.error('Failed to delete playlist:', response.data);
+                alert('Failed to delete playlist');
+            }
+        } catch (error) {
+            console.error('Error deleting playlist:', error);
+            alert('Error deleting playlist');
+        }
     }
 
     const playPlaylist = function(list) {

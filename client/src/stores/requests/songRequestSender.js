@@ -27,8 +27,8 @@ export const editSongById = ( songId, title, artist, year, youtubeId ) => {
         youtubeId: youtubeId
     })
 }   
-export const getAllSongsInPlaylist = (userid) => {
-    return api.get(`userplaylist/${userid}`)
+export const getAllSongsInPlaylist = (playlistId) => {
+    return api.get(`/songs/playlist/${playlistId}`)
 }
 export const getUserSongs = (userId) => {
     return api.get(`/userSongs/${userId}`)

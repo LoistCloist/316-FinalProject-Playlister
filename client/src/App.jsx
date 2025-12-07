@@ -17,17 +17,19 @@ function App() {
     <>
     <BrowserRouter>
       <AuthContextProvider>
-        <PlaylistStoreContextProvider>
-          <AppBanner />
-          <Routes>
-            <Route path="/register" element={<CreateAccountScreen />} />
-            <Route path="/login" element={<LoginScreen />} />
-            <Route path="/editAccount" element={<EditAccountScreen />} />
-            <Route path="/playlists" element={<PlaylistsScreen />} />
-            <Route path="/songs" element={<SongCatalogScreen />} />
-            <Route path="*" element={<WelcomeScreen />} />
-          </Routes>
-        </PlaylistStoreContextProvider>
+        <SongStoreContextProvider>
+          <PlaylistStoreContextProvider>
+            <AppBanner />
+            <Routes>
+              <Route path="/register" element={<CreateAccountScreen />} />
+              <Route path="/login" element={<LoginScreen />} />
+              <Route path="/editAccount" element={<EditAccountScreen />} />
+              <Route path="/playlists" element={<PlaylistsScreen />} />
+              <Route path="/songs" element={<SongCatalogScreen />} />
+              <Route path="*" element={<WelcomeScreen />} />
+            </Routes>
+          </PlaylistStoreContextProvider>
+        </SongStoreContextProvider>
       </AuthContextProvider>
     </BrowserRouter>
     </>
