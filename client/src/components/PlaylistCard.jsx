@@ -27,7 +27,7 @@ export default function PlaylistCard({ playlist }) {
     // Force re-render when playlist prop changes
     useEffect(() => {
         // This ensures the card updates when playlist data changes
-    }, [playlist.playlistId, playlist.playlistName, playlist.songs]);
+    }, [playlist.playlistId, playlist.playlistName, playlist.songs, playlist.listeners]);
     const handleDelete = (event) => {
         event.stopPropagation();
         playlistStore.markListForDeletion(playlist);
@@ -91,6 +91,9 @@ export default function PlaylistCard({ playlist }) {
                 </Typography>
                 <Typography component="span" sx={{ color: '#b3b3b3', fontSize: '0.875rem' }}>
                   {playlist.userName}
+                </Typography>
+                <Typography component="span" sx={{ color: '#b3b3b3', fontSize: '0.75rem', mt: 0.5 }}>
+                  {playlist.listeners ? `${playlist.listeners.length} listener${playlist.listeners.length !== 1 ? 's' : ''}` : '0 listeners'}
                 </Typography>
               </Box>
             </Box>

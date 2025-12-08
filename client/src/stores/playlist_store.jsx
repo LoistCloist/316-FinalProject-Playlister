@@ -181,26 +181,33 @@ function PlaylistStoreContextProvider(props) {
                 });
             }
             case PlaylistStoreActionType.UPDATE_PLAYLIST_IN_LIST: {
-                const updatedPlaylists = playlistStore.playlists.map(playlist => 
-                    playlist.playlistId === payload.playlist.playlistId ? payload.playlist : playlist
-                );
-                
-                if (playlistStore.currentModal !== CurrentModal.EDIT_PLAYLIST_MODAL) {
-                    return setPlaylistStore({
-                        ...playlistStore,
+                // Use functional update to read the latest state (important for async state updates)
+                return setPlaylistStore(prevStore => {
+                    const updatedPlaylists = prevStore.playlists.map(playlist => 
+                        playlist.playlistId === payload.playlist.playlistId ? payload.playlist : playlist
+                    );
+                    
+                    // Preserve currentList if modal is open (EDIT or PLAY)
+                    const isEditModal = prevStore.currentModal === CurrentModal.EDIT_PLAYLIST_MODAL;
+                    const isPlayModal = prevStore.currentModal === CurrentModal.PLAY_PLAYLIST_MODAL;
+                    
+                    if (!isEditModal && !isPlayModal) {
+                        return {
+                            ...prevStore,
+                            playlists: updatedPlaylists,
+                            currentList: null
+                        };
+                    }
+                    
+                    const shouldUpdateCurrentList = prevStore.currentList && 
+                        prevStore.currentList.playlistId === payload.playlist.playlistId;
+                    
+                    return {
+                        ...prevStore,
                         playlists: updatedPlaylists,
-                        currentList: null
-                    });
-                }
-                
-                const shouldUpdateCurrentList = playlistStore.currentList && 
-                    playlistStore.currentList.playlistId === payload.playlist.playlistId;
-                
-                return setPlaylistStore({
-                    ...playlistStore,
-                    playlists: updatedPlaylists,
-                    currentList: shouldUpdateCurrentList ? payload.playlist : playlistStore.currentList
-                })
+                        currentList: shouldUpdateCurrentList ? payload.playlist : prevStore.currentList
+                    };
+                });
             }
             case PlaylistStoreActionType.SET_CURRENT_LIST_SONGS: {
                 return setPlaylistStore({
