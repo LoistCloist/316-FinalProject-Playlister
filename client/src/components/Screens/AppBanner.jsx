@@ -20,7 +20,7 @@ function AppBanner() {
     const [anchorEl, setAnchorEl] = React.useState(null);
     const navigate = useNavigate();
     const location = useLocation();
-    const isWelcomeScreen = location.pathname === '/' || location.pathname === '';
+    const isPlaylistOrSongScreen = location.pathname === '/playlists' || location.pathname === '/songs';
     
     // Derive view directly from location
     const view = location.pathname === '/songs' ? 'songs' : 
@@ -44,7 +44,7 @@ function AppBanner() {
                 <IconButton id="HomeButton" size="large" edge="start" href="/">
                     <CottageIcon fontSize="large" sx={{color: 'white' }} />
                 </IconButton>
-                {!isWelcomeScreen && (
+                {isPlaylistOrSongScreen && (
                     <TabSlider 
                         value={view} 
                         onChange={handleViewChange} 
