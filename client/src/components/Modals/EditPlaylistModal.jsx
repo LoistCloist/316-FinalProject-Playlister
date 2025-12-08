@@ -17,7 +17,6 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import CloseIcon from '@mui/icons-material/Close';
-import EditIcon from '@mui/icons-material/Edit';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -25,11 +24,9 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import PlaylistStoreContext from '../../stores/playlist_store';
-import SongStoreContext from '../../stores/song_store';
 import AuthContext from '../../auth';
 import playlistRequestSender from '../../stores/requests/playlistRequestSender';
 import songRequestSender from '../../stores/requests/songRequestSender';
-import EditSongModal from './EditSongModal';
 
 const CurrentModal = {
     NONE: "NONE",
@@ -38,7 +35,6 @@ const CurrentModal = {
 
 export default function EditPlaylistModal() {
     const { playlistStore } = useContext(PlaylistStoreContext);
-    const { songStore } = useContext(SongStoreContext);
     const { auth } = useContext(AuthContext);
     const navigate = useNavigate();
     
@@ -149,13 +145,6 @@ export default function EditPlaylistModal() {
 
     const handleAddSong = () => {
         navigate('/songs');
-    };
-
-    const handleEditSong = (song) => {
-        // Open edit song modal
-        if (songStore && songStore.editSong) {
-            songStore.editSong(song);
-        }
     };
 
     const handleDuplicateSong = (song) => {
@@ -308,15 +297,6 @@ export default function EditPlaylistModal() {
                                                     <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                         <IconButton
                                                             edge="end"
-                                                            onClick={() => handleEditSong(song)}
-                                                            size="small"
-                                                            title="Edit"
-                                                            sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
-                                                        >
-                                                            <EditIcon />
-                                                        </IconButton>
-                                                        <IconButton
-                                                            edge="end"
                                                             onClick={() => handleDuplicateSong(song)}
                                                             size="small"
                                                             title="Duplicate"
@@ -413,8 +393,6 @@ export default function EditPlaylistModal() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            <EditSongModal />
         </>
     );
 }
