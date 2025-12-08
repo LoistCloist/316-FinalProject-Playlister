@@ -94,15 +94,19 @@ function PlaylistsScreen() {
         }
     }
     
-    const handleClearSearch = () => {
+    const handleClearSearch = async () => {
         setSearchPlaylistName('');
         setSearchUserName('');
         setSearchSongTitle('');
         setSearchSongArtist('');
         setSearchSongYear('');
-        // Reload user playlists through store
+        // For logged-in users, reload their playlists
         if (playlistStore && playlistStore.loadUserPlaylists && auth.loggedIn && auth.user?.userId) {
             playlistStore.loadUserPlaylists();
+        } else if (playlistStore && playlistStore.searchPlaylists) {
+            // For guest users, clear playlists by calling searchPlaylists with empty values
+            // This will trigger loadUserPlaylists which sets playlists to empty array for guests
+            await playlistStore.searchPlaylists(undefined, undefined, undefined, undefined, undefined);
         }
     }
     const handleAddPlaylist = () => {

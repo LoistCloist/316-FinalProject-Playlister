@@ -127,14 +127,18 @@ function SongCatalogScreen() {
         }
     }
     
-    const handleClearSearch = () => {
+    const handleClearSearch = async () => {
         setCurrentPlayingSong(null);
         setSearchTitle('');
         setSearchArtist('');
         setSearchYear('');
-        // Reload user songs through store
+        // For logged-in users, reload their songs
         if (songStore && songStore.loadUserSongs && auth.loggedIn && auth.user?.userId) {
             songStore.loadUserSongs();
+        } else if (songStore && songStore.searchSongs) {
+            // For guest users, clear songs by calling searchSongs with empty values
+            // This will trigger the guest user logic that sets songs to empty array
+            await songStore.searchSongs(undefined, undefined, undefined);
         }
     }
     return (
