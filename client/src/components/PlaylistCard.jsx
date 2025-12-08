@@ -101,34 +101,39 @@ export default function PlaylistCard({ playlist }) {
               {canEdit && (
                 <>
                   <Button 
+                    component="div"
                     onClick={handleDelete}
                     size="small"
-                    sx={{ color: '#f44336', '&:hover': { backgroundColor: 'rgba(244, 67, 54, 0.1)' } }}
+                    sx={{ color: '#f44336', '&:hover': { backgroundColor: 'rgba(244, 67, 54, 0.1)' }, cursor: 'pointer' }}
                   >
                     Delete
                   </Button>
                   <Button 
+                    component="div"
                     onClick={handleEdit}
                     size="small"
-                    sx={{ color: 'white', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
+                    sx={{ color: 'white', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }, cursor: 'pointer' }}
                   >
                     Edit
                   </Button>
                   <Button 
+                    component="div"
                     onClick={handleCopy}
                     size="small"
-                    sx={{ color: 'white', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
+                    sx={{ color: 'white', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }, cursor: 'pointer' }}
                   >
                     Copy
                   </Button>
                 </>
               )}
               <Button 
+                component="div"
                 onClick={handlePlay}
                 size="small"
                 sx={{ 
                   color: '#285238', 
                   backgroundColor: 'rgba(40, 82, 56, 0.2)',
+                  cursor: 'pointer',
                   '&:hover': { 
                     backgroundColor: 'rgba(40, 82, 56, 0.3)',
                     color: '#3c896d'
