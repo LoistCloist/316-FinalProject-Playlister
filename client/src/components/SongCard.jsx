@@ -8,12 +8,17 @@ import {
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SongStoreContext from '../stores/song_store';
+import AuthContext from '../auth';
 import { useContext, useState } from 'react';
 
 export default function SongCard({ song, onPlay }) {
     const { songStore } = useContext(SongStoreContext);
+    const { auth } = useContext(AuthContext);
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
+    
+    // Check if song belongs to the current user
+    const isOwner = auth.loggedIn && auth.user && song.addedById === auth.user.userId;
     
     const handleClick = (event) => {
         event.stopPropagation();
@@ -33,14 +38,16 @@ export default function SongCard({ song, onPlay }) {
     
     const handleEdit = () => {
         handleMenuClose();
-        if (songStore && songStore.editSong) {
-            songStore.editSong(song);
+        if (songStore && songStore.openEditSongModal) {
+            songStore.openEditSongModal(song);
         }
     }
     
     const handleDelete = () => {
         handleMenuClose();
-        // TODO: Implement delete song functionality
+        if (songStore && songStore.markSongForDeletion) {
+            songStore.markSongForDeletion(song);
+        }
     }
 
     const playlistCount = song.inPlaylists ? song.inPlaylists.length : 0;
@@ -90,8 +97,8 @@ export default function SongCard({ song, onPlay }) {
                 open={open}
                 onClose={handleMenuClose}
             >
-                <MenuItem onClick={handleEdit}>Edit</MenuItem>
-                <MenuItem onClick={handleDelete}>Delete</MenuItem>
+                {isOwner && <MenuItem onClick={handleEdit}>Edit</MenuItem>}
+                {isOwner && <MenuItem onClick={handleDelete}>Delete</MenuItem>}
             </Menu>
         </Paper>
     );

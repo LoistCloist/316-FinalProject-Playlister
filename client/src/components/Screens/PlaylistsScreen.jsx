@@ -24,6 +24,11 @@ function PlaylistsScreen() {
     const { auth } = useContext(AuthContext);  
     const [sortBy, setSortBy] = useState('listenerCount');
     const [sortOrder, setSortOrder] = useState('asc');
+    const [searchPlaylistName, setSearchPlaylistName] = useState('');
+    const [searchUserName, setSearchUserName] = useState('');
+    const [searchSongTitle, setSearchSongTitle] = useState('');
+    const [searchSongArtist, setSearchSongArtist] = useState('');
+    const [searchSongYear, setSearchSongYear] = useState('');
     
     // Re-sort whenever sortBy or sortOrder changes
     useEffect(() => {
@@ -64,6 +69,39 @@ function PlaylistsScreen() {
     
     const playlistCount = playlistStore?.playlists?.length || 0;
     
+    const handleSearch = async (event) => {
+        event.preventDefault();
+        
+        // Get values from state (they're already controlled inputs)
+        const playlistName = searchPlaylistName.trim();
+        const userName = searchUserName.trim();
+        const title = searchSongTitle.trim();
+        const artist = searchSongArtist.trim();
+        const year = searchSongYear.trim();
+        
+        // Perform search through store
+        if (playlistStore && playlistStore.searchPlaylists) {
+            await playlistStore.searchPlaylists(
+                playlistName || undefined,
+                userName || undefined,
+                title || undefined,
+                artist || undefined,
+                year || undefined
+            );
+        }
+    }
+    
+    const handleClearSearch = () => {
+        setSearchPlaylistName('');
+        setSearchUserName('');
+        setSearchSongTitle('');
+        setSearchSongArtist('');
+        setSearchSongYear('');
+        // Reload user playlists through store
+        if (playlistStore && playlistStore.loadUserPlaylists && auth.loggedIn && auth.user?.userId) {
+            playlistStore.loadUserPlaylists();
+        }
+    }
     return (
         <>
             <Box sx={{ px: 4, py: 3 }}>
@@ -73,40 +111,57 @@ function PlaylistsScreen() {
                             <Typography color="textLight" variant="h2">
                                 Search Playlists
                             </Typography>
-                            <TextField 
-                                label="by Playlist Name" 
-                                variant="outlined" 
-                                fullWidth
-                                sx={whiteTextFieldSx} 
-                            />
-                            <TextField 
-                                label="by Username" 
-                                variant="outlined" 
-                                fullWidth
-                                sx={whiteTextFieldSx} 
-                            />
-                            <TextField 
-                                label="by Song Title" 
-                                variant="outlined" 
-                                fullWidth
-                                sx={whiteTextFieldSx} 
-                            />
-                            <TextField 
-                                label="by Song Artist" 
-                                variant="outlined" 
-                                fullWidth
-                                sx={whiteTextFieldSx} 
-                            />           
-                            <TextField 
-                                label="by Song Year" 
-                                variant="outlined" 
-                                fullWidth
-                                sx={whiteTextFieldSx} 
-                            />
-                            <Toolbar>
-                                <Button variant="contained">Confirm</Button>
-                                <Button variant="contained">Cancel</Button> 
-                            </Toolbar>
+                            <Stack component="form" noValidate onSubmit={handleSearch} sx={{ width: "100%" }} alignItems="flex-start" spacing={1.5}>
+                                <TextField 
+                                    label="by Playlist Name" 
+                                    variant="outlined" 
+                                    fullWidth
+                                    sx={whiteTextFieldSx}
+                                    name="playlistName"
+                                    value={searchPlaylistName}
+                                    onChange={(e) => setSearchPlaylistName(e.target.value)}
+                                />
+                                <TextField 
+                                    label="by Username" 
+                                    variant="outlined" 
+                                    fullWidth
+                                    sx={whiteTextFieldSx}
+                                    name="userName"
+                                    value={searchUserName}
+                                    onChange={(e) => setSearchUserName(e.target.value)}
+                                />
+                                <TextField 
+                                    label="by Song Title" 
+                                    variant="outlined" 
+                                    fullWidth
+                                    sx={whiteTextFieldSx}
+                                    name="songTitle"
+                                    value={searchSongTitle}
+                                    onChange={(e) => setSearchSongTitle(e.target.value)}
+                                />
+                                <TextField 
+                                    label="by Song Artist" 
+                                    variant="outlined" 
+                                    fullWidth
+                                    sx={whiteTextFieldSx}
+                                    name="songArtist"
+                                    value={searchSongArtist}
+                                    onChange={(e) => setSearchSongArtist(e.target.value)}
+                                />           
+                                <TextField 
+                                    label="by Song Year" 
+                                    variant="outlined" 
+                                    fullWidth
+                                    sx={whiteTextFieldSx}
+                                    name="songYear"
+                                    value={searchSongYear}
+                                    onChange={(e) => setSearchSongYear(e.target.value)}
+                                />
+                                <Toolbar>
+                                    <Button variant="contained" type="submit">Confirm</Button>
+                                    <Button variant="contained" type="button" onClick={handleClearSearch}>Clear</Button> 
+                                </Toolbar>
+                            </Stack>
                         </Stack>
                     </Grid>
                     <Divider orientation='vertical' flexItem sx={{
@@ -147,19 +202,44 @@ function PlaylistsScreen() {
                             <Typography color="textLight" variant="h5" sx={{ ml: 2, mb: 1 }}>
                                 {playlistCount} {playlistCount === 1 ? 'Playlist' : 'Playlists'}
                             </Typography>
-                            <List id="playlist-cards" sx={{overflow: 'scroll'}}>
-                                {playlistStore?.playlists && playlistStore.playlists.length > 0 ? (
-                                    playlistStore.playlists.map((playlist) => (
-                                        <PlaylistCard key={playlist.playlistId} playlist={playlist} />
-                                    ))
-                                ) : (
-                                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                                        <Typography color="textLight" variant="body1">
-                                            No playlists found
-                                        </Typography>
-                                    </Box>
-                                )}
-                            </List>
+                            <Box 
+                                id="playlist-cards-container"
+                                sx={{
+                                    overflowY: 'auto',
+                                    overflowX: 'hidden',
+                                    maxHeight: 'calc(100vh - 300px)',
+                                    backgroundColor: 'transparent',
+                                    borderRadius: 1,
+                                    pr: 1,
+                                    '&::-webkit-scrollbar': {
+                                        width: '8px',
+                                    },
+                                    '&::-webkit-scrollbar-track': {
+                                        backgroundColor: 'transparent',
+                                    },
+                                    '&::-webkit-scrollbar-thumb': {
+                                        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                                        borderRadius: '4px',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                        },
+                                    },
+                                }}
+                            >
+                                <List id="playlist-cards" sx={{ p: 0 }}>
+                                    {playlistStore?.playlists && playlistStore.playlists.length > 0 ? (
+                                        playlistStore.playlists.map((playlist) => (
+                                            <PlaylistCard key={playlist.playlistId} playlist={playlist} />
+                                        ))
+                                    ) : (
+                                        <Box sx={{ textAlign: 'center', py: 4 }}>
+                                            <Typography color="textLight" variant="body1">
+                                                No playlists found
+                                            </Typography>
+                                        </Box>
+                                    )}
+                                </List>
+                            </Box>
                         </Box>
                         <Button variant="contained" sx={{ mt: 2 }}>Add Playlist</Button>
                     </Grid>

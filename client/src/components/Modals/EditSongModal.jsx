@@ -57,17 +57,22 @@ export default function EditSongModal() {
         try {
             if (songStore && songStore.editSong) {
                 const success = await songStore.editSong(
-                currentSong.songId,
+                    currentSong.songId,
                     title,
                     artist,
                     year,
                     youtubeId
-            );
+                );
                 if (success) {
+                    // Reload all user songs
+
                     handleCancel();
                 }
             } else {
                 alert('Error: Song store not available');
+            }
+            if (songStore && songStore.loadUserSongs) {
+                await songStore.loadUserSongs();
             }
         } catch (error) {
             console.error('Error updating song:', error);

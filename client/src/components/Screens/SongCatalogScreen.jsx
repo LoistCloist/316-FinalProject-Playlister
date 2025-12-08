@@ -54,7 +54,7 @@ function SongCatalogScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auth.loggedIn, auth.user?.userId]);
     
-    // Re-sort when songs array length changes (e.g., after update or delete)
+    // Re-sort when songs array length changes or when loadUserSongs is called
     // Also re-sort when sortBy or sortOrder changes
     useEffect(() => {
         if (songStore?.songs && songStore?.sortSongs) {
@@ -67,7 +67,7 @@ function SongCatalogScreen() {
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [songStore?.songs?.length, sortBy, sortOrder]);
+    }, [songStore?.songs?.length, songStore?.songsRefreshTrigger, sortBy, sortOrder]);
     
     // Determine which songs to display (always from store)
     const displaySongs = songStore?.songs || [];

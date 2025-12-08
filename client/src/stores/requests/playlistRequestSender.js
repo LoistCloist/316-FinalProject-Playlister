@@ -16,8 +16,14 @@ export const createPlaylist = (playlistName, userName, email, songs) => {
 export const deletePlaylistById = (id) => {
     return api.delete(`/playlist/${id}`);
 }
-export const getPlaylists = () => {
-    return api.get('/playlist/');
+export const getPlaylists = (playlistName, userName, title, artist, year) => {
+    return api.post('/playlist/search', {
+        playlistName: playlistName || undefined,
+        userName: userName || undefined,
+        title: title || undefined,
+        artist: artist || undefined,
+        year: year || undefined
+    });
 }
 export const getPlaylistById = (id) => {
     return api.get(`/playlist/${id}`)

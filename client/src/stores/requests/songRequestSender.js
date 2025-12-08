@@ -38,7 +38,7 @@ export const getUserSongs = (userId) => {
     return api.get(`/userSongs/${userId}`)
 }
 export const deleteSongById = (id) => {
-    return api.delete(`/playlist/${id}`)
+    return api.delete(`/songs/${id}`)
 }
 export const searchSongs = (title, artist, year) => {
     const params = {};

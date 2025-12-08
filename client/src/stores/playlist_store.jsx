@@ -39,6 +39,8 @@ function PlaylistStoreContextProvider(props) {
         currentModal: CurrentModal.NONE,
         playlists: [],
         currentList: null,
+        currentListSongs: [], // Songs in the currently edited playlist
+        currentListName: '', // Name of the currently edited playlist
         newListCounter: 0,
         listMarkedForDeletion: null
     })
@@ -133,6 +135,47 @@ function PlaylistStoreContextProvider(props) {
                     currentModal: CurrentModal.NONE,
                     playlists: payload.playlists ? [...payload.playlists] : []
                 })
+            }
+            case PlaylistStoreActionType.SET_CURRENT_LIST_SONGS: {
+                return setPlaylistStore({
+                    ...playlistStore,
+                    currentListSongs: payload.songs ? [...payload.songs] : []
+                })
+            }
+            case PlaylistStoreActionType.SET_CURRENT_LIST_NAME: {
+                return setPlaylistStore({
+                    ...playlistStore,
+                    currentListName: payload.name || ''
+                })
+            }
+            case PlaylistStoreActionType.ADD_SONG_TO_PLAYLIST: {
+                const newSongs = [...playlistStore.currentListSongs, payload.song];
+                return setPlaylistStore({
+                    ...playlistStore,
+                    currentListSongs: newSongs
+                })
+            }
+            case PlaylistStoreActionType.REMOVE_SONG_FROM_PLAYLIST: {
+                const newSongs = playlistStore.currentListSongs.filter(
+                    song => song.songId !== payload.songId
+                );
+                return setPlaylistStore({
+                    ...playlistStore,
+                    currentListSongs: newSongs
+                })
+            }
+            case PlaylistStoreActionType.DUPLICATE_SONG_IN_PLAYLIST: {
+                const songToDuplicate = playlistStore.currentListSongs.find(
+                    song => song.songId === payload.songId
+                );
+                if (songToDuplicate) {
+                    const newSongs = [...playlistStore.currentListSongs, { ...songToDuplicate }];
+                    return setPlaylistStore({
+                        ...playlistStore,
+                        currentListSongs: newSongs
+                    })
+                }
+                return playlistStore;
             }
             default:
                 return playlistStore;
@@ -280,12 +323,85 @@ function PlaylistStoreContextProvider(props) {
         }
     }
 
+    const searchPlaylists = async function(playlistName, userName, title, artist, year) {
+        try {
+            // If all fields are empty, load user's playlists instead
+            if (!playlistName && !userName && !title && !artist && !year) {
+                await loadUserPlaylists();
+                return;
+            }
+            
+            const response = await playlistRequestSender.getPlaylists(
+                playlistName || undefined,
+                userName || undefined,
+                title || undefined,
+                artist || undefined,
+                year || undefined
+            );
+            if (response.status === 200 && response.data.success) {
+                // Replace playlists array with search results
+                getAllPlaylists(response.data.playlists || []);
+            } else {
+                // No results found
+                getAllPlaylists([]);
+            }
+        } catch (error) {
+            console.error("Failed to search playlists:", error);
+            if (error.response?.status === 404 || error.response?.status === 400) {
+                // No results found or invalid request
+                getAllPlaylists([]);
+            } else {
+                alert('Error searching playlists');
+            }
+        }
+    }
+
     const undo = function() {
         tps.undoTransaction();
     }
 
     const redo = function() {
         tps.doTransaction();
+    }
+
+    const addTransaction = function(transaction) {
+        tps.addTransaction(transaction);
+    }
+
+    // Methods for managing current playlist songs (used by transactions)
+    const setCurrentListSongs = function(songs) {
+        playlistStoreReducer({
+            type: PlaylistStoreActionType.SET_CURRENT_LIST_SONGS,
+            payload: { songs: songs }
+        });
+    }
+
+    const setCurrentListName = function(name) {
+        playlistStoreReducer({
+            type: PlaylistStoreActionType.SET_CURRENT_LIST_NAME,
+            payload: { name: name }
+        });
+    }
+
+    const addSongToPlaylist = function(song) {
+        playlistStoreReducer({
+            type: PlaylistStoreActionType.ADD_SONG_TO_PLAYLIST,
+            payload: { song: song }
+        });
+    }
+
+    const removeSongFromPlaylist = function(songId) {
+        playlistStoreReducer({
+            type: PlaylistStoreActionType.REMOVE_SONG_FROM_PLAYLIST,
+            payload: { songId: songId }
+        });
+    }
+
+    const duplicateSong = function(songId) {
+        playlistStoreReducer({
+            type: PlaylistStoreActionType.DUPLICATE_SONG_IN_PLAYLIST,
+            payload: { songId: songId }
+        });
     }
 
     // Combine state and methods without mutating the state object
@@ -304,8 +420,15 @@ function PlaylistStoreContextProvider(props) {
         findPlaylistById,
         getAllPlaylists,
         loadUserPlaylists,
+        searchPlaylists,
         undo,
-        redo
+        redo,
+        addTransaction,
+        setCurrentListSongs,
+        setCurrentListName,
+        addSongToPlaylist,
+        removeSongFromPlaylist,
+        duplicateSong
     };
 
     return (

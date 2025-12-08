@@ -35,7 +35,8 @@ function SongStoreContextProvider(props) {
         currentSong: null,
         newSongCounter: 0,
         songs: [],
-        songMarkedForDeletion: null
+        songMarkedForDeletion: null,
+        songsRefreshTrigger: 0
     })
 
     const { auth } = useContext(AuthContext);
@@ -183,6 +184,11 @@ function SongStoreContextProvider(props) {
                         type: SongStoreActionType.GET_USER_SONGS,
                         payload: { songs: response.data.songs }
                     });
+                    // Increment refresh trigger to notify components
+                    setSongStore(prevStore => ({
+                        ...prevStore,
+                        songsRefreshTrigger: prevStore.songsRefreshTrigger + 1
+                    }));
                 }
             } catch (error) {
                 console.error("Failed to load user songs:", error);
