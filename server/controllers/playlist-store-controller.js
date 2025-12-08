@@ -490,6 +490,76 @@ addSongToPlaylist = async (req, res) => {
     });
 }
 
+duplicatePlaylist = async (req, res) => {
+    const playlistId = req.params.id;
+    
+    if (!playlistId) {
+        return res.status(400).json({
+            errorMessage: "Playlist ID is required."
+        });
+    }
+    
+    // Check if user is authenticated (required to duplicate playlists)
+    const mongooseUserId = auth.verifyUser(req);
+    if (mongooseUserId === null) {
+        return res.status(401).json({
+            errorMessage: "UNAUTHORIZED - Must be logged in to duplicate playlists."
+        });
+    }
+    
+    const user = await User.findOne({ _id: mongooseUserId });
+    if (!user) {
+        return res.status(400).json({
+            errorMessage: "User not found."
+        });
+    }
+    
+    // Find the playlist to duplicate
+    const originalPlaylist = await Playlist.findOne({ playlistId: playlistId });
+    if (!originalPlaylist) {
+        return res.status(404).json({
+            errorMessage: "Playlist not found!"
+        });
+    }
+    
+    // Create new playlist with duplicated data
+    const newPlaylistId = randomUUID();
+    const newPlaylist = await Playlist.create({
+        playlistId: newPlaylistId,
+        userId: user.userId, // New owner is the current user
+        playlistName: originalPlaylist.playlistName, // Will be updated with counter on frontend
+        userName: user.userName,
+        email: user.email,
+        songs: originalPlaylist.songs ? [...originalPlaylist.songs] : [], // Duplicate song IDs
+        listeners: [] // Start with empty listeners
+    });
+    
+    // Add playlist to user's playlists array
+    user.playlists.push(newPlaylist.playlistId);
+    await user.save();
+    
+    // Update songs' inPlaylists arrays to include the new playlist
+    if (originalPlaylist.songs && originalPlaylist.songs.length > 0) {
+        for (const songId of originalPlaylist.songs) {
+            const song = await Song.findOne({ songId: songId });
+            if (song) {
+                if (!song.inPlaylists) {
+                    song.inPlaylists = [];
+                }
+                if (!song.inPlaylists.includes(newPlaylistId)) {
+                    song.inPlaylists.push(newPlaylistId);
+                    await song.save();
+                }
+            }
+        }
+    }
+    
+    return res.status(200).json({
+        success: true,
+        playlist: newPlaylist.toObject()
+    });
+}
+
 module.exports = {
     createPlaylist,
     deletePlaylistById,
@@ -499,5 +569,6 @@ module.exports = {
     getAllPlaylists,
     updatePlaylist,
     addListener,
-    addSongToPlaylist
+    addSongToPlaylist,
+    duplicatePlaylist
 }
