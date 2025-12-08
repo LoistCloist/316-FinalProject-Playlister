@@ -29,7 +29,9 @@ export const getPlaylistById = (id) => {
     return api.get(`/playlist/${id}`)
 }   
 export const getUserPlaylists = (userid) => {
-    return api.get(`userplaylist/${userid}`)
+    // Add timestamp to bust any potential caching
+    const timestamp = new Date().getTime();
+    return api.get(`userplaylist/${userid}?t=${timestamp}`)
 }
 export const getAllPlaylists = () => {
     return api.get('/allplaylists')

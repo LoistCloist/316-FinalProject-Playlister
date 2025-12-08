@@ -19,6 +19,7 @@ const PlaylistStoreActionType = {
     FIND_PLAYLIST: "FIND_PLAYLIST",
     FIND_PLAYLIST_BY_ID: "FIND_PLAYLIST_BY_ID",
     GET_ALL_PLAYLISTS: "GET_ALL_PLAYLISTS",
+    UPDATE_PLAYLIST_IN_LIST: "UPDATE_PLAYLIST_IN_LIST",
 }
 
 const tps = new jsTPS();
@@ -42,7 +43,8 @@ function PlaylistStoreContextProvider(props) {
         currentListSongs: [], // Songs in the currently edited playlist
         currentListName: '', // Name of the currently edited playlist
         newListCounter: 0,
-        listMarkedForDeletion: null
+        listMarkedForDeletion: null,
+        playlistsRefreshTrigger: 0 // Trigger to force re-render when playlists are updated
     })
 
     const { auth } = useContext(AuthContext);
@@ -51,11 +53,17 @@ function PlaylistStoreContextProvider(props) {
         const { type, payload } = action;
         switch (type) {
             case PlaylistStoreActionType.CREATE_NEW_LIST: {
+                // If currentList is provided, open the edit modal for it
+                const shouldOpenEditModal = payload.currentList !== null && payload.currentList !== undefined;
+                const newPlaylists = payload.currentList
+                    ? [...playlistStore.playlists, payload.currentList]
+                    : playlistStore.playlists;
                 return setPlaylistStore({
-                    currentModal: CurrentModal.NONE,
-                    playlists: playlistStore.playlists,
-                    currentList: null,
-                    newListCounter: playlistStore.newListCounter + 1,
+                    ...playlistStore,
+                    currentModal: shouldOpenEditModal ? CurrentModal.EDIT_PLAYLIST_MODAL : CurrentModal.NONE,
+                    currentList: payload.currentList || null,
+                    playlists: newPlaylists,
+                    newListCounter: payload.newListCounter !== undefined ? payload.newListCounter : playlistStore.newListCounter + 1,
                     listMarkedForDeletion: null
                 })
             }
@@ -84,7 +92,8 @@ function PlaylistStoreContextProvider(props) {
                 return setPlaylistStore({
                     ...playlistStore,
                     currentModal: CurrentModal.NONE,
-                    currentList: null
+                    currentList: null,
+                    listMarkedForDeletion: null
                 })
             }
             case PlaylistStoreActionType.SORT_PLAYLISTS: {
@@ -130,10 +139,36 @@ function PlaylistStoreContextProvider(props) {
                 })
             }
             case PlaylistStoreActionType.GET_ALL_PLAYLISTS: {
+                const newPlaylists = payload.playlists ? [...payload.playlists] : [];
+                // Check if currentList or listMarkedForDeletion still exist in the new playlists
+                // If not, clear them to prevent stale references that could trigger modals
+                const currentListExists = playlistStore.currentList && 
+                    newPlaylists.some(p => p.playlistId === playlistStore.currentList.playlistId);
+                const listMarkedExists = playlistStore.listMarkedForDeletion && 
+                    newPlaylists.some(p => p.playlistId === playlistStore.listMarkedForDeletion.playlistId);
+                
+                // If listMarkedForDeletion no longer exists, close the delete modal
+                const shouldCloseDeleteModal = !listMarkedExists && 
+                    playlistStore.currentModal === CurrentModal.DELETE_PLAYLIST_MODAL;
+                
                 return setPlaylistStore({
                     ...playlistStore,
-                    currentModal: CurrentModal.NONE,
-                    playlists: payload.playlists ? [...payload.playlists] : []
+                    playlists: newPlaylists,
+                    // Clear currentList if it no longer exists in the new playlists
+                    currentList: currentListExists ? playlistStore.currentList : null,
+                    // Clear listMarkedForDeletion if it no longer exists in the new playlists
+                    listMarkedForDeletion: listMarkedExists ? playlistStore.listMarkedForDeletion : null,
+                    // Close delete modal if the marked list no longer exists
+                    currentModal: shouldCloseDeleteModal ? CurrentModal.NONE : playlistStore.currentModal
+                })
+            }
+            case PlaylistStoreActionType.UPDATE_PLAYLIST_IN_LIST: {
+                const updatedPlaylists = playlistStore.playlists.map(playlist => 
+                    playlist.playlistId === payload.playlist.playlistId ? payload.playlist : playlist
+                );
+                return setPlaylistStore({
+                    ...playlistStore,
+                    playlists: updatedPlaylists
                 })
             }
             case PlaylistStoreActionType.SET_CURRENT_LIST_SONGS: {
@@ -181,11 +216,43 @@ function PlaylistStoreContextProvider(props) {
                 return playlistStore;
         }
     }
-    const createNewList = function() {
-        playlistStoreReducer({
-            type: PlaylistStoreActionType.CREATE_NEW_LIST,
-            payload: {}
-        });
+    const createNewList = async function() {
+
+        const playlistName = "Untitled Playlist" + (playlistStore.newListCounter + 1);
+        const userName = auth.user?.userName || '';
+        const email = auth.user?.email || '';
+        const songs = [];
+        const response = await playlistRequestSender.createPlaylist(
+            playlistName,
+            userName,
+            email,
+            songs
+        );
+        if (response.status === 200 && response.data.success) {
+            const newPlaylist = {
+                playlistId: response.data.playlistId,
+                playlistName: playlistName,
+                userName: userName,
+                email: email,
+                songs: songs,
+                userAvatar: auth.user?.avatar || null
+            };
+            
+            // Update the counter, set current list, and open edit modal
+            playlistStoreReducer({
+                type: PlaylistStoreActionType.CREATE_NEW_LIST,
+                payload: {
+                    newListCounter: playlistStore.newListCounter + 1,
+                    currentList: newPlaylist
+                }
+            });
+        }
+        else {
+            console.error('Failed to create new playlist:', response.data);
+            alert('Failed to create new playlist');
+            return;
+        }
+        
     }
     const markListForDeletion = function(list) {
         playlistStoreReducer({
@@ -206,6 +273,13 @@ function PlaylistStoreContextProvider(props) {
         playlistStoreReducer({
             type: PlaylistStoreActionType.EDIT_PLAYLIST,
             payload: { list: list }
+        });
+    }
+
+    const updatePlaylistInList = function(playlist) {
+        playlistStoreReducer({
+            type: PlaylistStoreActionType.UPDATE_PLAYLIST_IN_LIST,
+            payload: { playlist: playlist }
         });
     }
 
@@ -262,7 +336,10 @@ function PlaylistStoreContextProvider(props) {
                 // Hide modal first
                 playlistStoreReducer({
                     type: PlaylistStoreActionType.HIDE_MODALS,
-                    payload: {}
+                    payload: {
+                        listMarkedForDeletion: null,
+                        currentList: null
+                    }
                 });
                 // Reload playlists after successful deletion
                 await loadUserPlaylists();
@@ -317,6 +394,15 @@ function PlaylistStoreContextProvider(props) {
             if (response.status === 200 && response.data.success) {
                 console.log("Loaded playlists:", response.data.playlists);
                 getAllPlaylists(response.data.playlists || []);
+                // Increment refresh trigger to notify components
+                setPlaylistStore(prevStore => {
+                    const newTrigger = prevStore.playlistsRefreshTrigger + 1;
+                    console.log("🔄 Incrementing playlistsRefreshTrigger to:", newTrigger);
+                    return {
+                        ...prevStore,
+                        playlistsRefreshTrigger: newTrigger
+                    };
+                });
             }
         } catch (error) {
             console.error("Error loading user playlists:", error);
@@ -411,6 +497,7 @@ function PlaylistStoreContextProvider(props) {
         markListForDeletion,
         setCurrentList,
         editPlaylist,
+        updatePlaylistInList,
         hideModals,
         sortPlaylists,
         duplicatePlaylist,
