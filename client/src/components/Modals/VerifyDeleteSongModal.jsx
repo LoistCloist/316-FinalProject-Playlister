@@ -29,10 +29,24 @@ export default function VerifyDeleteSongModal() {
     }
 
     return (
-        <Dialog open={isOpen} onClose={handleCancel}>
-            <DialogTitle>Delete Song</DialogTitle>
-            <DialogContent>
-                <Typography>
+        <Dialog 
+            open={isOpen} 
+            onClose={handleCancel}
+            PaperProps={{
+                sx: {
+                    backgroundColor: '#1a1a1a', // Dark background to match app
+                    color: 'white',
+                }
+            }}
+        >
+            <DialogTitle sx={{ 
+                backgroundColor: '#285238', // Primary green from theme
+                color: 'white',
+            }}>
+                Delete Song
+            </DialogTitle>
+            <DialogContent sx={{ backgroundColor: '#1a1a1a', color: 'white', mt: 2 }}>
+                <Typography sx={{ color: 'white' }}>
                     {currentSong ? (
                         <>
                             Are you sure you want to delete the song "{currentSong.title || 'Unknown Title'}" by {currentSong.artist || 'Unknown Artist'}? 
@@ -43,11 +57,32 @@ export default function VerifyDeleteSongModal() {
                     )}
                 </Typography>
             </DialogContent>
-            <DialogActions>
-                <Button variant="contained" color="error" onClick={handleConfirm}>
+            <DialogActions sx={{ backgroundColor: '#1a1a1a', color: 'white', p: 2 }}>
+                <Button 
+                    variant="contained" 
+                    color="error" 
+                    onClick={handleConfirm}
+                    sx={{
+                        backgroundColor: '#d32f2f',
+                        '&:hover': {
+                            backgroundColor: '#c62828',
+                        },
+                    }}
+                >
                     Confirm
                 </Button>
-                <Button variant="outlined" onClick={handleCancel}>
+                <Button 
+                    variant="outlined" 
+                    onClick={handleCancel}
+                    sx={{
+                        borderColor: 'rgba(255, 255, 255, 0.3)',
+                        color: 'white',
+                        '&:hover': {
+                            borderColor: 'rgba(255, 255, 255, 0.5)',
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        },
+                    }}
+                >
                     Cancel
                 </Button>
             </DialogActions>

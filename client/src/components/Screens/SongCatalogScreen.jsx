@@ -18,7 +18,8 @@ import SongCard from '../SongCard'
 import SongStoreContext from '../../stores/song_store'
 import AuthContext from '../../auth'
 import EditSongModal from '../Modals/EditSongModal'
-import songRequestSender from '../../stores/requests/songRequestSender'
+import VerifyDeleteSongModal from '../Modals/VerifyDeleteSongModal'
+import AddSongToCatalogModal from '../Modals/AddSongToCatalogModal'
 
 function SongCatalogScreen() {
     const { songStore } = useContext(SongStoreContext);
@@ -29,8 +30,6 @@ function SongCatalogScreen() {
     const [searchTitle, setSearchTitle] = useState('');
     const [searchArtist, setSearchArtist] = useState('');
     const [searchYear, setSearchYear] = useState('');
-    const [isSearching, setIsSearching] = useState(false);
-    const [searchResults, setSearchResults] = useState(null);
     // Re-sort whenever sortBy or sortOrder changes
     useEffect(() => {
         if (songStore?.songs?.length > 0 && songStore?.sortSongs) {
@@ -56,46 +55,28 @@ function SongCatalogScreen() {
     }, [auth.loggedIn, auth.user?.userId]);
     
     // Re-sort when songs array length changes (e.g., after update or delete)
-    // Only watch length to avoid infinite loops from array reference changes
+    // Also re-sort when sortBy or sortOrder changes
     useEffect(() => {
-        if (!isSearching && songStore?.songs && songStore?.sortSongs) {
+        if (songStore?.songs && songStore?.sortSongs) {
             if (songStore.songs.length > 0) {
-                songStore.sortSongs(sortBy, sortOrder);
+                // Small delay to ensure store has fully updated
+                const timeoutId = setTimeout(() => {
+                    songStore.sortSongs(sortBy, sortOrder);
+                }, 50);
+                return () => clearTimeout(timeoutId);
             }
-            // Even if empty, the component should re-render to show "No songs found"
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [songStore?.songs?.length, isSearching]);
+    }, [songStore?.songs?.length, sortBy, sortOrder]);
     
-    // Sort search results when sort changes
-    useEffect(() => {
-        if (isSearching && searchResults && searchResults.length > 0) {
-            const sorted = [...searchResults].sort((a, b) => {
-                let aValue = a[sortBy];
-                let bValue = b[sortBy];
-                if (typeof aValue === 'string') {
-                    aValue = aValue.toLowerCase();
-                    bValue = bValue.toLowerCase();
-                }
-                let comparison = 0;
-                if (aValue > bValue) {
-                    comparison = 1;
-                } else if (aValue < bValue) {
-                    comparison = -1;
-                }
-                return sortOrder === 'asc' ? comparison : -comparison;
-            });
-            setSearchResults(sorted);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sortBy, sortOrder, isSearching]);
-    
-    // Determine which songs to display
-    const displaySongs = isSearching ? (searchResults || []) : (songStore?.songs || []);
+    // Determine which songs to display (always from store)
+    const displaySongs = songStore?.songs || [];
     const songCount = displaySongs.length;
     
     const handleAddSong = () => {
-        // TODO: Implement add song functionality
+        if (songStore && songStore.addSongToCatalog) {
+            songStore.addSongToCatalog(null, '');
+        }
     }
     
     const handlePlaySong = (song) => {
@@ -116,39 +97,13 @@ function SongCatalogScreen() {
         const artist = searchArtist.trim();
         const year = searchYear.trim();
         
-        // If all fields are empty, show user's songs
-        if (!title && !artist && !year) {
-            setIsSearching(false);
-            setSearchResults(null);
-            // Reload user songs
-            if (songStore && songStore.loadUserSongs && auth.loggedIn && auth.user?.userId) {
-                songStore.loadUserSongs();
-            }
-            return;
-        }
-        
-        // Perform search
-        setIsSearching(true);
-        try {
-            const response = await songRequestSender.getTargetSongs(
-                title || undefined, 
-                artist || undefined, 
+        // Perform search through store
+        if (songStore && songStore.searchSongs) {
+            await songStore.searchSongs(
+                title || undefined,
+                artist || undefined,
                 year || undefined
             );
-            if (response.status === 200 && response.data.success) {
-                setSearchResults(response.data.songs || []);
-            } else {
-                setSearchResults([]);
-            }
-        } catch (error) {
-            console.error('Search error:', error);
-            if (error.response?.status === 404) {
-                setSearchResults([]);
-            } else {
-                alert('Error searching songs');
-                setSearchResults(null);
-                setIsSearching(false);
-            }
         }
     }
     
@@ -157,9 +112,7 @@ function SongCatalogScreen() {
         setSearchTitle('');
         setSearchArtist('');
         setSearchYear('');
-        setIsSearching(false);
-        setSearchResults(null);
-        // Reload user songs
+        // Reload user songs through store
         if (songStore && songStore.loadUserSongs && auth.loggedIn && auth.user?.userId) {
             songStore.loadUserSongs();
         }
@@ -305,7 +258,7 @@ function SongCatalogScreen() {
                                     ) : (
                                         <Box sx={{ textAlign: 'center', py: 4 }}>
                                             <Typography color="textLight" variant="body1">
-                                                {isSearching ? 'No songs found matching your search' : 'No songs found'}
+                                                No songs found
                                             </Typography>
                                         </Box>
                                     )}
@@ -319,6 +272,8 @@ function SongCatalogScreen() {
                 </Grid>
             </Box>
             <EditSongModal />
+            <VerifyDeleteSongModal />
+            <AddSongToCatalogModal />
         </>
     )
 }
