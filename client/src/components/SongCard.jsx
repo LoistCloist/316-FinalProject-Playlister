@@ -12,6 +12,7 @@ import PlaylistStoreContext from '../stores/playlist_store';
 import AuthContext from '../auth';
 import { useContext, useState, useEffect, useRef } from 'react';
 import playlistRequestSender from '../stores/requests/playlistRequestSender';
+import songRequestSender from '../stores/requests/songRequestSender';
 
 export default function SongCard({ song, onPlay }) {
     const { songStore } = useContext(SongStoreContext);
@@ -119,6 +120,20 @@ export default function SongCard({ song, onPlay }) {
             );
             
             if (response.status === 200 && response.data.success) {
+                // Fetch the updated song to get the latest inPlaylists count
+                try {
+                    const songResponse = await songRequestSender.getSongById(song.songId);
+                    if (songResponse.status === 200 && songResponse.data.success) {
+                        const updatedSong = songResponse.data.song;
+                        // Update the song in the list with the new inPlaylists count
+                        if (songStore?.updateSongInList) {
+                            songStore.updateSongInList(updatedSong);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error fetching updated song:", error);
+                }
+                
                 // Reload playlists to reflect the change
                 if (playlistStore?.loadUserPlaylists) {
                     await playlistStore.loadUserPlaylists();

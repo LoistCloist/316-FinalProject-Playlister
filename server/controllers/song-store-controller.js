@@ -29,7 +29,7 @@ createSong = async (req, res) => {
                 errorMessage: "User not found."
             })
         }
-        await Song.create({
+        const newSong = await Song.create({
             songId: songId,
             title: title,
             artist: artist,
@@ -39,7 +39,10 @@ createSong = async (req, res) => {
             inPlaylists: [],
             addedById: user.userId  // Use UUID, not mongoose _id
         })
-        return res.status(200).json({ success: true })
+        return res.status(200).json({ 
+            success: true,
+            song: newSong.toObject()
+        })
     } catch (err) {
         return res.status(400).json({
             errorMessage: "Song creation failed."

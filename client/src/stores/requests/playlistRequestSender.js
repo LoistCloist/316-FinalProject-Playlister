@@ -48,6 +48,11 @@ export const updatePlaylist = (id, playlistName, userName, email, songs) => {
 export const addListener = (playlistId) => {
     return api.post(`/playlist/${playlistId}/listener`)
 }
+export const addSongToPlaylist = (playlistId, songId) => {
+    return api.post(`/playlist/${playlistId}/song`, {
+        songId: songId
+    })
+}
 
 const apis = {
     createPlaylist,
@@ -57,7 +62,8 @@ const apis = {
     getUserPlaylists,
     getAllPlaylists,
     updatePlaylist,
-    addListener
+    addListener,
+    addSongToPlaylist
 }
 
 export default apis;

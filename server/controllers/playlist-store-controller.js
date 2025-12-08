@@ -327,6 +327,39 @@ updatePlaylist = async (req, res) => {
     if (playlist.userId !== user.userId) {
         return res.status(400).json( {errorMessage: "Incorrect user. Authentication failed."})
     }
+    
+    const playlistId = playlist.playlistId;
+    const oldSongIds = playlist.songs || [];
+    const newSongIds = songs || [];
+    
+    // Find songs that were removed (in old but not in new)
+    const removedSongIds = oldSongIds.filter(songId => !newSongIds.includes(songId));
+    // Find songs that were added (in new but not in old)
+    const addedSongIds = newSongIds.filter(songId => !oldSongIds.includes(songId));
+    
+    // Remove playlistId from removed songs' inPlaylists
+    for (const songId of removedSongIds) {
+        const song = await Song.findOne({ songId: songId });
+        if (song && song.inPlaylists) {
+            song.inPlaylists = song.inPlaylists.filter(pid => pid !== playlistId);
+            await song.save();
+        }
+    }
+    
+    // Add playlistId to added songs' inPlaylists
+    for (const songId of addedSongIds) {
+        const song = await Song.findOne({ songId: songId });
+        if (song) {
+            if (!song.inPlaylists) {
+                song.inPlaylists = [];
+            }
+            if (!song.inPlaylists.includes(playlistId)) {
+                song.inPlaylists.push(playlistId);
+                await song.save();
+            }
+        }
+    }
+    
     playlist.playlistName = playlistName;
     playlist.songs = songs;
     await playlist.save();
@@ -382,6 +415,81 @@ addListener = async (req, res) => {
     });
 }
 
+addSongToPlaylist = async (req, res) => {
+    const playlistId = req.params.id;
+    const { songId } = req.body;
+    
+    if (!playlistId || !songId) {
+        return res.status(400).json({
+            errorMessage: "Playlist ID and Song ID are required."
+        });
+    }
+    
+    // Check if user is authenticated (required to add songs)
+    const mongooseUserId = auth.verifyUser(req);
+    if (mongooseUserId === null) {
+        return res.status(401).json({
+            errorMessage: "UNAUTHORIZED - Must be logged in to add songs to playlists."
+        });
+    }
+    
+    const user = await User.findOne({ _id: mongooseUserId });
+    if (!user) {
+        return res.status(400).json({
+            errorMessage: "User not found."
+        });
+    }
+    
+    const playlist = await Playlist.findOne({ playlistId: playlistId });
+    if (!playlist) {
+        return res.status(404).json({
+            errorMessage: "Playlist not found!"
+        });
+    }
+    
+    // Check if user owns the playlist (required to add songs)
+    if (playlist.userId !== user.userId) {
+        return res.status(403).json({
+            errorMessage: "You can only add songs to playlists you own."
+        });
+    }
+    
+    // Check if song already exists in playlist
+    if (playlist.songs && playlist.songs.includes(songId)) {
+        return res.status(200).json({
+            success: true,
+            message: "Song already in playlist",
+            playlist: playlist
+        });
+    }
+    
+    // Add song ID to the playlist (append, not replace)
+    // Note: We don't check if the user owns the song - anyone can add any song to their own playlist
+    if (!playlist.songs) {
+        playlist.songs = [];
+    }
+    playlist.songs.push(songId);
+    await playlist.save();
+    
+    // Update the song's inPlaylists array to include this playlist
+    const song = await Song.findOne({ songId: songId });
+    if (song) {
+        if (!song.inPlaylists) {
+            song.inPlaylists = [];
+        }
+        // Add playlistId if not already in the array
+        if (!song.inPlaylists.includes(playlistId)) {
+            song.inPlaylists.push(playlistId);
+            await song.save();
+        }
+    }
+    
+    return res.status(200).json({
+        success: true,
+        playlist: playlist
+    });
+}
+
 module.exports = {
     createPlaylist,
     deletePlaylistById,
@@ -390,5 +498,6 @@ module.exports = {
     getUserPlaylists,
     getAllPlaylists,
     updatePlaylist,
-    addListener
+    addListener,
+    addSongToPlaylist
 }
