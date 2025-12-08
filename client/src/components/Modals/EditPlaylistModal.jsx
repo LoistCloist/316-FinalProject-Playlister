@@ -15,6 +15,7 @@ import {
     Toolbar,
     Paper
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -29,7 +30,6 @@ import AuthContext from '../../auth';
 import playlistRequestSender from '../../stores/requests/playlistRequestSender';
 import songRequestSender from '../../stores/requests/songRequestSender';
 import EditSongModal from './EditSongModal';
-import { useNavigate } from 'react-router-dom';
 
 const CurrentModal = {
     NONE: "NONE",
@@ -41,11 +41,10 @@ export default function EditPlaylistModal() {
     const { songStore } = useContext(SongStoreContext);
     const { auth } = useContext(AuthContext);
     const navigate = useNavigate();
+    
     const [playlistName, setPlaylistName] = useState('');
     const [songs, setSongs] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [showSongSelector, setShowSongSelector] = useState(false);
-    const [availableSongs, setAvailableSongs] = useState([]);
     
     const isOpen = playlistStore.currentModal === CurrentModal.EDIT_PLAYLIST_MODAL;
     const currentPlaylist = playlistStore.currentList;
@@ -55,7 +54,6 @@ export default function EditPlaylistModal() {
         if (isOpen && currentPlaylist) {
             setPlaylistName(currentPlaylist.playlistName || '');
             loadPlaylistSongs();
-            loadAvailableSongs();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, currentPlaylist]);
@@ -107,25 +105,10 @@ export default function EditPlaylistModal() {
         }
     };
 
-    // Load available songs from user's catalog
-    const loadAvailableSongs = async () => {
-        if (auth.loggedIn && auth.user?.userId) {
-            try {
-                const response = await songRequestSender.getUserSongs(auth.user.userId);
-                if (response.status === 200 && response.data.success) {
-                    setAvailableSongs(response.data.songs || []);
-                }
-            } catch (error) {
-                console.error('Error loading available songs:', error);
-            }
-        }
-    };
-
     const handleCancel = () => {
         playlistStore.hideModals();
         setPlaylistName('');
         setSongs([]);
-        setShowSongSelector(false);
     };
 
     const handleConfirm = async () => {
@@ -166,6 +149,13 @@ export default function EditPlaylistModal() {
 
     const handleAddSong = () => {
         navigate('/songs');
+    };
+
+    const handleEditSong = (song) => {
+        // Open edit song modal
+        if (songStore && songStore.editSong) {
+            songStore.editSong(song);
+        }
     };
 
     const handleDuplicateSong = (song) => {
@@ -210,14 +200,15 @@ export default function EditPlaylistModal() {
                 fullWidth
                 PaperProps={{
                     sx: {
-                        backgroundColor: '#1a1a1a', // Dark background to match app
+                        backgroundColor: '#1a1a1a', // Dark background
+                        color: 'white',
                         minHeight: '500px'
                     }
                 }}
             >
                 <DialogTitle 
                     sx={{ 
-                        backgroundColor: '#285238', // Primary green from theme
+                        backgroundColor: '#285238', // Primary green
                         color: 'white',
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -234,7 +225,7 @@ export default function EditPlaylistModal() {
                     </IconButton>
                 </DialogTitle>
                 
-                <DialogContent sx={{ mt: 2 }}>
+                <DialogContent sx={{ backgroundColor: '#1a1a1a', color: 'white', mt: 2 }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {/* Playlist Name Field */}
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -244,20 +235,44 @@ export default function EditPlaylistModal() {
                                 onChange={(e) => setPlaylistName(e.target.value)}
                                 variant="outlined"
                                 fullWidth
-                                sx={{ flexGrow: 1 }}
+                                sx={{
+                                    flexGrow: 1,
+                                    '& .MuiOutlinedInput-root': {
+                                        '& fieldset': {
+                                            borderColor: 'rgba(255, 255, 255, 0.3)',
+                                        },
+                                        '&:hover fieldset': {
+                                            borderColor: 'rgba(255, 255, 255, 0.5)',
+                                        },
+                                        '&.Mui-focused fieldset': {
+                                            borderColor: '#285238',
+                                        },
+                                    },
+                                    '& .MuiInputLabel-root': {
+                                        color: 'rgba(255, 255, 255, 0.7)',
+                                    },
+                                    '& .MuiInputBase-input': {
+                                        color: 'white',
+                                    },
+                                }}
                             />
                             <IconButton 
                                 onClick={handleClearName}
-                                sx={{ color: 'text.secondary' }}
+                                sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
                             >
                                 <CloseIcon />
                             </IconButton>
                             <Button
                                 variant="contained"
-                                color="secondary"
                                 startIcon={<AddIcon />}
                                 onClick={handleAddSong}
-                                sx={{ minWidth: '120px' }}
+                                sx={{ 
+                                    minWidth: '120px',
+                                    backgroundColor: '#285238',
+                                    '&:hover': {
+                                        backgroundColor: '#4fb286',
+                                    },
+                                }}
                             >
                                 <MusicNoteIcon sx={{ mr: 0.5, fontSize: '1rem' }} />
                                 Add Song
@@ -266,11 +281,11 @@ export default function EditPlaylistModal() {
 
                         {/* Songs List */}
                         <Box sx={{ mt: 2 }}>
-                            <Typography variant="h6" sx={{ mb: 1 }}>
+                            <Typography variant="h6" sx={{ mb: 1, color: 'white' }}>
                                 Songs ({songs.length})
                             </Typography>
                             {songs.length === 0 ? (
-                                <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+                                <Typography sx={{ py: 2, textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)' }}>
                                     No songs in this playlist
                                 </Typography>
                             ) : (
@@ -282,7 +297,7 @@ export default function EditPlaylistModal() {
                                             sx={{ 
                                                 mb: 1, 
                                                 p: 1,
-                                                backgroundColor: '#2a2a2a', // Dark gray to match app theme
+                                                backgroundColor: '#2a2a2a', // Dark gray
                                                 border: '1px solid #285238', // Primary green border
                                                 color: 'white'
                                             }}
@@ -296,6 +311,7 @@ export default function EditPlaylistModal() {
                                                             onClick={() => handleEditSong(song)}
                                                             size="small"
                                                             title="Edit"
+                                                            sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
                                                         >
                                                             <EditIcon />
                                                         </IconButton>
@@ -304,6 +320,7 @@ export default function EditPlaylistModal() {
                                                             onClick={() => handleDuplicateSong(song)}
                                                             size="small"
                                                             title="Duplicate"
+                                                            sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
                                                         >
                                                             <ContentCopyIcon />
                                                         </IconButton>
@@ -312,7 +329,7 @@ export default function EditPlaylistModal() {
                                                             onClick={() => handleRemoveSong(song.songId)}
                                                             size="small"
                                                             title="Remove"
-                                                            color="error"
+                                                            sx={{ color: '#f44336' }}
                                                         >
                                                             <DeleteIcon />
                                                         </IconButton>
@@ -336,79 +353,64 @@ export default function EditPlaylistModal() {
                     </Box>
                 </DialogContent>
 
-                <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+                <DialogActions sx={{ backgroundColor: '#1a1a1a', color: 'white', p: 2, justifyContent: 'space-between' }}>
                     <Box>
                         <Button
                             variant="contained"
-                            color="secondary"
                             startIcon={<UndoIcon />}
                             onClick={handleUndo}
+                            sx={{
+                                backgroundColor: '#285238',
+                                '&:hover': {
+                                    backgroundColor: '#4fb286',
+                                },
+                            }}
                         >
                             Undo
                         </Button>
                         <Button
                             variant="contained"
-                            color="secondary"
                             startIcon={<RedoIcon />}
                             onClick={handleRedo}
-                            sx={{ ml: 1 }}
+                            sx={{ 
+                                ml: 1,
+                                backgroundColor: '#285238',
+                                '&:hover': {
+                                    backgroundColor: '#4fb286',
+                                },
+                            }}
                         >
                             Redo
                         </Button>
                     </Box>
                     <Button
                         variant="contained"
-                        color="success"
                         onClick={handleConfirm}
                         disabled={loading || !playlistName.trim()}
+                        sx={{
+                            backgroundColor: '#285238',
+                            '&:hover': {
+                                backgroundColor: '#4fb286',
+                            },
+                        }}
                     >
                         {loading ? 'Saving...' : 'Confirm'}
                     </Button>
                     <Button
                         variant="outlined"
-                        color="success"
                         onClick={handleCancel}
                         disabled={loading}
+                        sx={{
+                            borderColor: 'rgba(255, 255, 255, 0.3)',
+                            color: 'white',
+                            '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.5)',
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            },
+                        }}
                     >
                         Cancel
                     </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Song Selector Dialog */}
-            <Dialog
-                open={showSongSelector}
-                onClose={() => setShowSongSelector(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>Select a Song to Add</DialogTitle>
-                <DialogContent>
-                    <List>
-                        {availableSongs.length === 0 ? (
-                            <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-                                No songs available. Create songs in the Song Catalog first.
-                            </Typography>
-                        ) : (
-                            availableSongs
-                                .filter(song => !songs.some(s => s.songId === song.songId))
-                                .map((song) => (
-                                    <ListItem
-                                        key={song.songId}
-                                        button
-                                        onClick={() => handleSelectSong(song)}
-                                    >
-                                        <ListItemText
-                                            primary={`${song.title || 'Unknown Title'} by ${song.artist || 'Unknown Artist'}`}
-                                            secondary={song.year ? `Year: ${song.year}` : ''}
-                                        />
-                                    </ListItem>
-                                ))
-                        )}
-                    </List>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setShowSongSelector(false)}>Cancel</Button>
                 </DialogActions>
             </Dialog>
 
@@ -416,4 +418,3 @@ export default function EditPlaylistModal() {
         </>
     );
 }
-
