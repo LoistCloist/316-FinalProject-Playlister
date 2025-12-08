@@ -10,5 +10,6 @@ router.get('/playlist/:id', PlaylistController.getPlaylistById) // Public - gues
 router.get('/userplaylist/:userid', auth.verify, PlaylistController.getUserPlaylists) // Requires auth - user's own playlists
 router.get('/allplaylists', PlaylistController.getAllPlaylists) // Public - guests can view all
 router.put('/playlist/:id', auth.verify, PlaylistController.updatePlaylist)
+router.post('/playlist/:id/listener', PlaylistController.addListener) // Public - guests and users can add themselves as listeners
 
 module.exports = router

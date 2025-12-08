@@ -35,7 +35,8 @@ createPlaylist = async (req, res) => {
             playlistName: playlistName,
             userName: userName,
             email: email,
-            songs: songs
+            songs: songs,
+            listeners: [] // Initialize empty listeners array
         })
         user.playlists.push(playlist.playlistId);
         await user.save();
@@ -332,6 +333,55 @@ updatePlaylist = async (req, res) => {
     return res.status(200).json({ success: true });
 }
 
+addListener = async (req, res) => {
+    const playlistId = req.params.id;
+    if (!playlistId) {
+        return res.status(400).json({
+            errorMessage: "Playlist ID is required."
+        });
+    }
+    
+    const playlist = await Playlist.findOne({ playlistId: playlistId });
+    if (!playlist) {
+        return res.status(404).json({
+            errorMessage: "Playlist not found!"
+        });
+    }
+    
+    // Determine listener ID: "guest" for unauthenticated users, userId for authenticated users
+    let listenerId;
+    const mongooseUserId = auth.verifyUser(req);
+    if (mongooseUserId === null) {
+        // Guest user
+        listenerId = "guest";
+    } else {
+        // Authenticated user - get their userId
+        const user = await User.findOne({ _id: mongooseUserId });
+        if (!user) {
+            return res.status(400).json({
+                errorMessage: "User not found."
+            });
+        }
+        listenerId = user.userId;
+    }
+    
+    // Initialize listeners array if it doesn't exist
+    if (!playlist.listeners) {
+        playlist.listeners = [];
+    }
+    
+    // Add listener only if not already in array (unique constraint)
+    if (!playlist.listeners.includes(listenerId)) {
+        playlist.listeners.push(listenerId);
+        await playlist.save();
+    }
+    
+    return res.status(200).json({
+        success: true,
+        listeners: playlist.listeners
+    });
+}
+
 module.exports = {
     createPlaylist,
     deletePlaylistById,
@@ -339,5 +389,6 @@ module.exports = {
     getPlaylistById,
     getUserPlaylists,
     getAllPlaylists,
-    updatePlaylist
+    updatePlaylist,
+    addListener
 }

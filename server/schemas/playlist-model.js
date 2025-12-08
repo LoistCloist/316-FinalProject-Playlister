@@ -12,7 +12,7 @@ const playlistSchema = new Schema(
         userName: { type: String, required: true },
         email: { type: String, required: true },
         songs: [{ type: String, trim: true, required: true}],
-        listeners: { type: UserSchema, required: true}
+        listeners: [{ type: String }] // Array of unique userIds + "guest"
     },
     { timestamps: true }
 )
