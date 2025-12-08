@@ -1,48 +1,333 @@
-import {  useState } from 'react'
-import * as React from 'react'
-import { 
-    Box, 
-        Button, 
-        Dialog, 
-        Typography, 
-        TextField, 
-        Toolbar,
-        DialogTitle,
-        DialogContent,
-        DialogActions
-} from '@mui/material'
+import { useContext, useState, useEffect } from 'react';
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    Button,
+    Box,
+    Typography,
+    IconButton,
+    Toolbar
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import SongStoreContext from '../../stores/song_store';
+import AuthContext from '../../auth';
+import songRequestSender from '../../stores/requests/songRequestSender';
+
+const CurrentModal = {
+    NONE: "NONE",
+    EDIT_SONG_MODAL: "EDIT_SONG_MODAL",
+};
 
 export default function EditSongModal() {
-    //const { songStore, setSongStore } = useContext(SongStoreContext);
-    //const { playlistStore, setPlaylistStore } = useContext(PlaylistStoreContext);
-    const [open, setOpen] = useState(false);
-    const handleConfirm = () => {
-        setOpen(false);
-    }
+    const { songStore } = useContext(SongStoreContext);
+    const { auth } = useContext(AuthContext);
+    
+    const [title, setTitle] = useState('');
+    const [artist, setArtist] = useState('');
+    const [year, setYear] = useState('');
+    const [youtubeId, setYoutubeId] = useState('');
+    const [loading, setLoading] = useState(false);
+    
+    const isOpen = songStore.currentModal === CurrentModal.EDIT_SONG_MODAL;
+    const currentSong = songStore.currentSong;
+
+    // Load song data when modal opens
+    useEffect(() => {
+        if (isOpen && currentSong) {
+            setTitle(currentSong.title || '');
+            setArtist(currentSong.artist || '');
+            setYear(currentSong.year || '');
+            setYoutubeId(currentSong.youtubeId || '');
+        }
+    }, [isOpen, currentSong]);
+
+    const handleConfirm = async () => {
+        if (!currentSong || !currentSong.songId) {
+            alert('No song selected');
+            return;
+        }
+
+        // Validate required fields
+        if (!title.trim() || !artist.trim() || !year.trim() || !youtubeId.trim()) {
+            alert('All fields are required');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await songRequestSender.editSongById(
+                currentSong.songId,
+                title.trim(),
+                artist.trim(),
+                year.trim(),
+                youtubeId.trim()
+            );
+            
+            if (response.status === 200 && response.data.success) {
+                // Reload user songs to reflect changes
+                if (songStore && songStore.loadUserSongs && auth.loggedIn && auth.user?.userId) {
+                    await songStore.loadUserSongs();
+                }
+                // Small delay to ensure store updates before closing
+                await new Promise(resolve => setTimeout(resolve, 100));
+                handleCancel();
+            } else {
+                console.error('Failed to update song:', response.data);
+                alert('Failed to update song');
+            }
+        } catch (error) {
+            console.error('Error updating song:', error);
+            alert('Error updating song');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleCancel = () => {
-        setOpen(false);
-    }   
-    const handleOpen = () => {
-        setOpen(true);
-    }
+        if (songStore && songStore.hideModals) {
+            songStore.hideModals();
+        }
+        // Reset form
+        setTitle('');
+        setArtist('');
+        setYear('');
+        setYoutubeId('');
+    };
+
+    const handleClearTitle = () => {
+        setTitle('');
+    };
+
+    const handleClearArtist = () => {
+        setArtist('');
+    };
+
+    const handleClearYear = () => {
+        setYear('');
+    };
+
+    const handleClearYoutubeId = () => {
+        setYoutubeId('');
+    };
+
     return (
-        <>
-            <Dialog open={open} onClose={handleCancel} >
-                <DialogTitle>Edit Song</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
-                        <TextField label="Title" variant="outlined" fullWidth />
-                        <TextField label="Artist" variant="outlined" fullWidth />
-                        <TextField label="Year" variant="outlined" fullWidth />
-                        <TextField label="YouTube ID" variant="outlined" fullWidth />
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button variant="contained" onClick={handleConfirm}>Confirm</Button>
-                    <Button variant="contained" onClick={handleCancel}>Cancel</Button>
-                </DialogActions>
-            </Dialog>
-            <Button variant="contained" onClick={handleOpen}>Open Dialog</Button>
-        </>
-    )
+        <Dialog 
+            open={isOpen} 
+            onClose={handleCancel}
+            maxWidth="sm"
+            fullWidth
+            PaperProps={{
+                sx: {
+                    backgroundColor: '#1a1a1a', // Dark background
+                    color: 'white',
+                }
+            }}
+        >
+            <DialogTitle sx={{ 
+                backgroundColor: '#285238', // Primary green
+                color: 'white',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <Typography variant="h6">Edit Song</Typography>
+                <IconButton
+                    edge="end"
+                    color="inherit"
+                    onClick={handleCancel}
+                    aria-label="close"
+                    sx={{ color: 'white' }}
+                >
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ backgroundColor: '#1a1a1a', color: 'white', mt: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+                    <TextField
+                        label="Title"
+                        variant="outlined"
+                        fullWidth
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                                },
+                                '&:hover fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    borderColor: '#285238',
+                                },
+                            },
+                            '& .MuiInputLabel-root': {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                            },
+                            '& .MuiInputBase-input': {
+                                color: 'white',
+                            },
+                        }}
+                        InputProps={{
+                            endAdornment: title && (
+                                <IconButton
+                                    size="small"
+                                    onClick={handleClearTitle}
+                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                >
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
+                            ),
+                        }}
+                    />
+                    <TextField
+                        label="Artist"
+                        variant="outlined"
+                        fullWidth
+                        value={artist}
+                        onChange={(e) => setArtist(e.target.value)}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                                },
+                                '&:hover fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    borderColor: '#285238',
+                                },
+                            },
+                            '& .MuiInputLabel-root': {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                            },
+                            '& .MuiInputBase-input': {
+                                color: 'white',
+                            },
+                        }}
+                        InputProps={{
+                            endAdornment: artist && (
+                                <IconButton
+                                    size="small"
+                                    onClick={handleClearArtist}
+                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                >
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
+                            ),
+                        }}
+                    />
+                    <TextField
+                        label="Year"
+                        variant="outlined"
+                        fullWidth
+                        value={year}
+                        onChange={(e) => setYear(e.target.value)}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                                },
+                                '&:hover fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    borderColor: '#285238',
+                                },
+                            },
+                            '& .MuiInputLabel-root': {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                            },
+                            '& .MuiInputBase-input': {
+                                color: 'white',
+                            },
+                        }}
+                        InputProps={{
+                            endAdornment: year && (
+                                <IconButton
+                                    size="small"
+                                    onClick={handleClearYear}
+                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                >
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
+                            ),
+                        }}
+                    />
+                    <TextField
+                        label="YouTube ID"
+                        variant="outlined"
+                        fullWidth
+                        value={youtubeId}
+                        onChange={(e) => setYoutubeId(e.target.value)}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                                },
+                                '&:hover fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    borderColor: '#285238',
+                                },
+                            },
+                            '& .MuiInputLabel-root': {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                            },
+                            '& .MuiInputBase-input': {
+                                color: 'white',
+                            },
+                        }}
+                        InputProps={{
+                            endAdornment: youtubeId && (
+                                <IconButton
+                                    size="small"
+                                    onClick={handleClearYoutubeId}
+                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                >
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
+                            ),
+                        }}
+                    />
+                </Box>
+            </DialogContent>
+            <DialogActions sx={{ backgroundColor: '#1a1a1a', color: 'white', p: 2 }}>
+                <Toolbar sx={{ width: '100%', justifyContent: 'flex-end', gap: 1 }}>
+                    <Button
+                        variant="contained"
+                        onClick={handleConfirm}
+                        disabled={loading}
+                        sx={{
+                            backgroundColor: '#285238',
+                            '&:hover': {
+                                backgroundColor: '#4fb286',
+                            },
+                        }}
+                    >
+                        Confirm
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        onClick={handleCancel}
+                        disabled={loading}
+                        sx={{
+                            borderColor: 'rgba(255, 255, 255, 0.3)',
+                            color: 'white',
+                            '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.5)',
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            },
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                </Toolbar>
+            </DialogActions>
+        </Dialog>
+    );
 }
