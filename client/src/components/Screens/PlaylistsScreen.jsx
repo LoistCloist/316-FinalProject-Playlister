@@ -18,6 +18,7 @@ import PlaylistStoreContext from '../../stores/playlist_store'
 import AuthContext from '../../auth'
 import EditPlaylistModal from '../Modals/EditPlaylistModal'
 import DeletePlaylistModal from '../Modals/DeletePlaylistModal'
+import PlayPlaylistModal from '../Modals/PlayPlaylistModal'
 
 function PlaylistsScreen() {
     const { playlistStore } = useContext(PlaylistStoreContext);
@@ -55,8 +56,8 @@ function PlaylistsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auth.loggedIn, auth.user?.userId]);
     
-    // Re-sort when playlists array length changes (e.g., after update or delete)
-    // Only watch length to avoid infinite loops from array reference changes
+    // Re-sort when playlists array length changes or when refresh trigger changes (e.g., after update or delete)
+    // The refresh trigger ensures we re-render even when only playlist content changes, not length
     useEffect(() => {
         if (playlistStore?.playlists && playlistStore?.sortPlaylists) {
             if (playlistStore.playlists.length > 0) {
@@ -65,7 +66,7 @@ function PlaylistsScreen() {
             // Even if empty, the component should re-render to show "No playlists found"
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [playlistStore?.playlists?.length]);
+    }, [playlistStore?.playlists?.length, playlistStore?.playlistsRefreshTrigger]);
     
     const playlistCount = playlistStore?.playlists?.length || 0;
     
@@ -100,6 +101,11 @@ function PlaylistsScreen() {
         // Reload user playlists through store
         if (playlistStore && playlistStore.loadUserPlaylists && auth.loggedIn && auth.user?.userId) {
             playlistStore.loadUserPlaylists();
+        }
+    }
+    const handleAddPlaylist = () => {
+        if (playlistStore && playlistStore.createNewList) {
+            playlistStore.createNewList();
         }
     }
     return (
@@ -241,12 +247,13 @@ function PlaylistsScreen() {
                                 </List>
                             </Box>
                         </Box>
-                        <Button variant="contained" sx={{ mt: 2 }}>Add Playlist</Button>
+                        <Button variant="contained" sx={{ mt: 2 }} onClick={handleAddPlaylist}>Add Playlist</Button>
                     </Grid>
                 </Grid>
             </Box>
             <EditPlaylistModal />
             <DeletePlaylistModal />
+            <PlayPlaylistModal />
         </>
     )
 }

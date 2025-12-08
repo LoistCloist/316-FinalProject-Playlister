@@ -140,35 +140,66 @@ function PlaylistStoreContextProvider(props) {
             }
             case PlaylistStoreActionType.GET_ALL_PLAYLISTS: {
                 const newPlaylists = payload.playlists ? [...payload.playlists] : [];
-                // Check if currentList or listMarkedForDeletion still exist in the new playlists
-                // If not, clear them to prevent stale references that could trigger modals
-                const currentListExists = playlistStore.currentList && 
-                    newPlaylists.some(p => p.playlistId === playlistStore.currentList.playlistId);
-                const listMarkedExists = playlistStore.listMarkedForDeletion && 
-                    newPlaylists.some(p => p.playlistId === playlistStore.listMarkedForDeletion.playlistId);
                 
-                // If listMarkedForDeletion no longer exists, close the delete modal
-                const shouldCloseDeleteModal = !listMarkedExists && 
-                    playlistStore.currentModal === CurrentModal.DELETE_PLAYLIST_MODAL;
-                
-                return setPlaylistStore({
-                    ...playlistStore,
-                    playlists: newPlaylists,
-                    // Clear currentList if it no longer exists in the new playlists
-                    currentList: currentListExists ? playlistStore.currentList : null,
-                    // Clear listMarkedForDeletion if it no longer exists in the new playlists
-                    listMarkedForDeletion: listMarkedExists ? playlistStore.listMarkedForDeletion : null,
-                    // Close delete modal if the marked list no longer exists
-                    currentModal: shouldCloseDeleteModal ? CurrentModal.NONE : playlistStore.currentModal
-                })
+                return setPlaylistStore(prevStore => {
+                    if (prevStore.currentModal === CurrentModal.NONE) {
+                        return {
+                            ...prevStore,
+                            playlists: newPlaylists,
+                            currentList: null,
+                            listMarkedForDeletion: null
+                        };
+                    }
+                    
+                    const currentListExists = prevStore.currentList && 
+                        newPlaylists.some(p => p.playlistId === prevStore.currentList.playlistId);
+                    const listMarkedExists = prevStore.listMarkedForDeletion && 
+                        newPlaylists.some(p => p.playlistId === prevStore.listMarkedForDeletion.playlistId);
+                    
+                    const shouldCloseDeleteModal = !listMarkedExists && 
+                        prevStore.currentModal === CurrentModal.DELETE_PLAYLIST_MODAL;
+                    
+                    const shouldCloseEditModal = !currentListExists && 
+                        prevStore.currentModal === CurrentModal.EDIT_PLAYLIST_MODAL;
+                    
+                    let newModal = prevStore.currentModal;
+                    if (shouldCloseDeleteModal || shouldCloseEditModal) {
+                        newModal = CurrentModal.NONE;
+                    }
+                    
+                    const preservedCurrentList = (currentListExists && newModal === CurrentModal.EDIT_PLAYLIST_MODAL) 
+                        ? prevStore.currentList : null;
+                    
+                    return {
+                        ...prevStore,
+                        playlists: newPlaylists,
+                        currentList: preservedCurrentList,
+                        listMarkedForDeletion: (listMarkedExists && newModal === CurrentModal.DELETE_PLAYLIST_MODAL) 
+                            ? prevStore.listMarkedForDeletion : null,
+                        currentModal: newModal
+                    };
+                });
             }
             case PlaylistStoreActionType.UPDATE_PLAYLIST_IN_LIST: {
                 const updatedPlaylists = playlistStore.playlists.map(playlist => 
                     playlist.playlistId === payload.playlist.playlistId ? payload.playlist : playlist
                 );
+                
+                if (playlistStore.currentModal !== CurrentModal.EDIT_PLAYLIST_MODAL) {
+                    return setPlaylistStore({
+                        ...playlistStore,
+                        playlists: updatedPlaylists,
+                        currentList: null
+                    });
+                }
+                
+                const shouldUpdateCurrentList = playlistStore.currentList && 
+                    playlistStore.currentList.playlistId === payload.playlist.playlistId;
+                
                 return setPlaylistStore({
                     ...playlistStore,
-                    playlists: updatedPlaylists
+                    playlists: updatedPlaylists,
+                    currentList: shouldUpdateCurrentList ? payload.playlist : playlistStore.currentList
                 })
             }
             case PlaylistStoreActionType.SET_CURRENT_LIST_SONGS: {
@@ -269,7 +300,6 @@ function PlaylistStoreContextProvider(props) {
     }
 
     const editPlaylist = function(list) {
-        
         playlistStoreReducer({
             type: PlaylistStoreActionType.EDIT_PLAYLIST,
             payload: { list: list }
@@ -383,24 +413,30 @@ function PlaylistStoreContextProvider(props) {
         });
     }
 
-    const loadUserPlaylists = async function() {
+    const loadUserPlaylists = async function(clearModalState = false) {
         if (!auth.loggedIn || !auth.user?.userId) {
             console.log("User not logged in, cannot load playlists");
             return;
         }
+        if (!playlistStore) {
+            return;
+        }
         try {
-            console.log("Loading playlists for user:", auth.user.userId);
+            if (clearModalState) {
+                playlistStoreReducer({
+                    type: PlaylistStoreActionType.HIDE_MODALS,
+                    payload: {}
+                });
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+            
             const response = await playlistRequestSender.getUserPlaylists(auth.user.userId);
             if (response.status === 200 && response.data.success) {
-                console.log("Loaded playlists:", response.data.playlists);
                 getAllPlaylists(response.data.playlists || []);
-                // Increment refresh trigger to notify components
                 setPlaylistStore(prevStore => {
-                    const newTrigger = prevStore.playlistsRefreshTrigger + 1;
-                    console.log("🔄 Incrementing playlistsRefreshTrigger to:", newTrigger);
                     return {
                         ...prevStore,
-                        playlistsRefreshTrigger: newTrigger
+                        playlistsRefreshTrigger: prevStore.playlistsRefreshTrigger + 1
                     };
                 });
             }

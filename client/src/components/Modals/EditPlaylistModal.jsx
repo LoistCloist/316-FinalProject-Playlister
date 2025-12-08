@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect, useRef } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -41,18 +41,33 @@ export default function EditPlaylistModal() {
     const [playlistName, setPlaylistName] = useState('');
     const [songs, setSongs] = useState([]);
     const [loading, setLoading] = useState(false);
+    const lastPlaylistIdRef = useRef(null);
+    const isLoadingRef = useRef(false);
     
-    const isOpen = playlistStore.currentModal === CurrentModal.EDIT_PLAYLIST_MODAL;
-    const currentPlaylist = playlistStore.currentList;
+    const isOpen = playlistStore?.currentModal === CurrentModal.EDIT_PLAYLIST_MODAL;
+    const currentPlaylist = playlistStore?.currentList;
 
     // Load playlist data when modal opens
     useEffect(() => {
         if (isOpen && currentPlaylist) {
-            setPlaylistName(currentPlaylist.playlistName || '');
-            loadPlaylistSongs();
+            const playlistId = currentPlaylist.playlistId;
+            // Only load if this is a different playlist or modal just opened, and not already loading
+            if (playlistId !== lastPlaylistIdRef.current && !isLoadingRef.current) {
+                lastPlaylistIdRef.current = playlistId;
+                isLoadingRef.current = true;
+                setPlaylistName(currentPlaylist.playlistName || '');
+                loadPlaylistSongs().finally(() => {
+                    isLoadingRef.current = false;
+                });
+            }
+        } else if (!isOpen) {
+            // Reset refs when modal closes
+            lastPlaylistIdRef.current = null;
+            isLoadingRef.current = false;
         }
+        // Only depend on isOpen to prevent double-triggering when currentPlaylist reference changes
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, currentPlaylist]);
+    }, [isOpen]);
 
     // Load full song details for the playlist
     const loadPlaylistSongs = async () => {
@@ -102,7 +117,9 @@ export default function EditPlaylistModal() {
     };
 
     const handleCancel = () => {
-        playlistStore.hideModals();
+        if (playlistStore?.hideModals) {
+            playlistStore.hideModals();
+        }
         setPlaylistName('');
         setSongs([]);
     };
@@ -122,11 +139,23 @@ export default function EditPlaylistModal() {
             );
 
             if (response.status === 200 && response.data.success) {
-                // Reload playlists to get updated data
-                await playlistStore.loadUserPlaylists();
-                // Small delay to ensure store updates before closing
-                await new Promise(resolve => setTimeout(resolve, 100));
+                // Optimistically update the playlist in the local array (immediate UI feedback)
+                const updatedPlaylist = {
+                    ...currentPlaylist,
+                    playlistName: playlistName,
+                    songs: songs // Update with the current songs array
+                };
+                if (playlistStore?.updatePlaylistInList) {
+                    playlistStore.updatePlaylistInList(updatedPlaylist);
+                }
+                
+                // Close modal first
                 handleCancel();
+                
+                // Reload playlists to sync with server (after modal is closed)
+                if (playlistStore?.loadUserPlaylists) {
+                    await playlistStore.loadUserPlaylists(true);
+                }
             } else {
                 console.error('Failed to update playlist:', response.data);
                 alert('Failed to update playlist');
