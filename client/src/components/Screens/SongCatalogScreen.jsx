@@ -265,9 +265,11 @@ function SongCatalogScreen() {
                                 </List>
                             </Box>
                         </Box>
-                        <Button variant="contained" sx={{ mt: 2 }} onClick={handleAddSong}>
-                            Add Song
-                        </Button>
+                        {auth.loggedIn && (
+                            <Button variant="contained" sx={{ mt: 2 }} onClick={handleAddSong}>
+                                Add Song
+                            </Button>
+                        )}
                     </Grid>
                 </Grid>
             </Box>

@@ -39,7 +39,10 @@ createPlaylist = async (req, res) => {
         })
         user.playlists.push(playlist.playlistId);
         await user.save();
-        return res.status(200).json({ success: true });
+        return res.status(200).json({ 
+            success: true,
+            playlistId: playlist.playlistId
+        });
     } catch (error) {
         console.error("Error creating playlist:", error);
         return res.status(400).json({
@@ -90,12 +93,8 @@ deletePlaylistById = async (req, res) => {
 }
 
 getPlaylists = async (req, res) => {
-    if(auth.verifyUser(req) === null){
-        return res.status(400).json({
-            errorMessage: 'UNAUTHORIZED'
-        })
-    }
-    const { playlistName, userName, title, artist, year } = req.body;
+    // Support both GET (query params) and POST (body) for backward compatibility
+    const { playlistName, userName, title, artist, year } = req.method === 'GET' ? req.query : req.body;
     
     // Require at least one field
     if (!playlistName && !userName && !title && !artist && !year) {
@@ -174,11 +173,6 @@ getPlaylists = async (req, res) => {
 
 // you shouldn't need to check if the playlist belongs to this user before returning.
 getPlaylistById = async (req, res) => {
-    if(auth.verifyUser(req) === null){
-        return res.status(400).json({
-            errorMessage: 'UNAUTHORIZED'
-        })
-    }
     const playlist = await Playlist.findOne({ playlistId: req.params.id });
     if (!playlist) {
         return res.status(404).json({ 
@@ -266,11 +260,6 @@ getUserPlaylists = async (req, res) => {
 }
 
 getAllPlaylists = async (req, res) => {
-    if(auth.verifyUser(req) === null){
-        return res.status(400).json({
-            errorMessage: 'UNAUTHORIZED'
-        })
-    }
     try {
         const allPlaylists = await Playlist.find({});
         

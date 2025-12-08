@@ -48,9 +48,11 @@ function PlaylistsScreen() {
     }
     
     useEffect(() => {
-        // Load user playlists when component mounts or when auth state changes
+        // Load playlists when component mounts or when auth state changes
+        // For logged in users: load their playlists
+        // For guests: leave empty until they search
         // Note: playlistStore intentionally excluded from dependencies to prevent reload on sort
-        if (playlistStore && playlistStore.loadUserPlaylists && auth.loggedIn && auth.user?.userId) {
+        if (playlistStore && playlistStore.loadUserPlaylists) {
             playlistStore.loadUserPlaylists();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -247,7 +249,9 @@ function PlaylistsScreen() {
                                 </List>
                             </Box>
                         </Box>
-                        <Button variant="contained" sx={{ mt: 2 }} onClick={handleAddPlaylist}>Add Playlist</Button>
+                        {auth.loggedIn && (
+                            <Button variant="contained" sx={{ mt: 2 }} onClick={handleAddPlaylist}>Add Playlist</Button>
+                        )}
                     </Grid>
                 </Grid>
             </Box>

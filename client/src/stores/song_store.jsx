@@ -198,9 +198,18 @@ function SongStoreContextProvider(props) {
 
     const searchSongs = async function(title, artist, year) {
         try {
-            // If all fields are empty, load user's songs instead
+            // If all fields are empty and user is logged in, load user's songs
+            // For guests, require at least one search field
             if (!title && !artist && !year) {
-                await loadUserSongs();
+                if (auth.loggedIn && auth.user?.userId) {
+                    await loadUserSongs();
+                } else {
+                    // Guest users must provide search criteria
+                    storeReducer({
+                        type: SongStoreActionType.GET_USER_SONGS,
+                        payload: { songs: [] }
+                    });
+                }
                 return;
             }
             

@@ -12,11 +12,22 @@ import {
   Box
 } from '@mui/material';
 import PlaylistStoreContext from '../stores/playlist_store';
-import { useContext, useState } from 'react';
+import AuthContext from '../auth';
+import { useContext, useState, useEffect } from 'react';
 
 export default function PlaylistCard({ playlist }) {
     const { playlistStore } = useContext(PlaylistStoreContext);
+    const { auth } = useContext(AuthContext);
     const [expanded, setExpanded] = useState(false);
+    
+    // Check if user is logged in and owns this playlist
+    const isOwner = auth.loggedIn && auth.user && playlist.userId === auth.user.userId;
+    const canEdit = auth.loggedIn && isOwner;
+    
+    // Force re-render when playlist prop changes
+    useEffect(() => {
+        // This ensures the card updates when playlist data changes
+    }, [playlist.playlistId, playlist.playlistName, playlist.songs]);
     const handleDelete = (event) => {
         event.stopPropagation();
         playlistStore.markListForDeletion(playlist);
@@ -30,6 +41,9 @@ export default function PlaylistCard({ playlist }) {
     }    
     const handlePlay = (event) => {
         event.stopPropagation();
+        if (playlistStore && playlistStore.playPlaylist) {
+            playlistStore.playPlaylist(playlist);
+        }
     }    
 
   return (
@@ -38,16 +52,16 @@ export default function PlaylistCard({ playlist }) {
         expanded={expanded}
         onChange={(event, isExpanded) => setExpanded(isExpanded)}
         sx={{
-          backgroundColor: '#2a2a2a', // Dark gray to match app theme
-          border: '1px solid #285238', // Primary green border
+          backgroundColor: '#2a2a2a', 
+          border: '1px solid #285238',
           color: 'white',
           mb: 1,
           '&:hover': {
             backgroundColor: '#333333',
-            borderColor: '#3c896d', // Lighter green on hover
+            borderColor: '#3c896d', 
           },
           '&:before': {
-            display: 'none', // Remove default border
+            display: 'none', 
           }
         }}
       >
@@ -81,27 +95,31 @@ export default function PlaylistCard({ playlist }) {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button 
-                onClick={handleDelete}
-                size="small"
-                sx={{ color: '#f44336', '&:hover': { backgroundColor: 'rgba(244, 67, 54, 0.1)' } }}
-              >
-                Delete
-              </Button>
-              <Button 
-                onClick={handleEdit}
-                size="small"
-                sx={{ color: 'white', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-              >
-                Edit
-              </Button>
-              <Button 
-                onClick={handleCopy}
-                size="small"
-                sx={{ color: 'white', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-              >
-                Copy
-              </Button>
+              {canEdit && (
+                <>
+                  <Button 
+                    onClick={handleDelete}
+                    size="small"
+                    sx={{ color: '#f44336', '&:hover': { backgroundColor: 'rgba(244, 67, 54, 0.1)' } }}
+                  >
+                    Delete
+                  </Button>
+                  <Button 
+                    onClick={handleEdit}
+                    size="small"
+                    sx={{ color: 'white', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
+                  >
+                    Edit
+                  </Button>
+                  <Button 
+                    onClick={handleCopy}
+                    size="small"
+                    sx={{ color: 'white', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
+                  >
+                    Copy
+                  </Button>
+                </>
+              )}
               <Button 
                 onClick={handlePlay}
                 size="small"

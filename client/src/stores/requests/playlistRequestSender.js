@@ -17,13 +17,14 @@ export const deletePlaylistById = (id) => {
     return api.delete(`/playlist/${id}`);
 }
 export const getPlaylists = (playlistName, userName, title, artist, year) => {
-    return api.post('/playlist/search', {
-        playlistName: playlistName || undefined,
-        userName: userName || undefined,
-        title: title || undefined,
-        artist: artist || undefined,
-        year: year || undefined
-    });
+    // Use GET request with query parameters
+    const params = new URLSearchParams();
+    if (playlistName) params.append('playlistName', playlistName);
+    if (userName) params.append('userName', userName);
+    if (title) params.append('title', title);
+    if (artist) params.append('artist', artist);
+    if (year) params.append('year', year);
+    return api.get(`/playlist/search?${params.toString()}`);
 }
 export const getPlaylistById = (id) => {
     return api.get(`/playlist/${id}`)

@@ -44,7 +44,7 @@ function AppBanner() {
                 <IconButton id="HomeButton" size="large" edge="start" href="/">
                     <CottageIcon fontSize="large" sx={{color: 'white' }} />
                 </IconButton>
-                {auth.loggedIn && !isWelcomeScreen && (
+                {!isWelcomeScreen && (
                     <TabSlider 
                         value={view} 
                         onChange={handleViewChange} 

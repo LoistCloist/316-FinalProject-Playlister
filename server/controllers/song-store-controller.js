@@ -48,11 +48,6 @@ createSong = async (req, res) => {
 }
 
 getTargetSongs = async (req, res) => {
-    if(auth.verifyUser(req) === null){
-        return res.status(400).json({
-            errorMessages: 'UNAUTHORIZED'
-        })
-    }
     const { title, artist, year } = req.query || {};
     if (!title && !artist && !year) {
         return res.status(400).json({ errorMessage: "Please include at least one search field."});
@@ -80,11 +75,6 @@ getTargetSongs = async (req, res) => {
 }
 
 getSongById = async (req, res) => {
-    if(auth.verifyUser(req) === null){
-        return res.status(400).json({
-            errorMessages: 'UNAUTHORIZED'
-        })
-    }
     const song = await Song.findOne({ songId: req.params.id})
     if (!song) {
         return res.status(404).json({ errorMessage: "Song does not exist!"})
@@ -120,11 +110,6 @@ editSongById = async (req, res) => {
 }
 
 getAllSongsInPlaylist = async (req, res) => {
-    if (auth.verifyUser(req) === null){
-        return res.status(400).json({
-            errorMessages: 'UNAUTHORIZED'
-        })
-    }
     const playlistId = req.params.playlistId;
     if (!playlistId) {
         return res.status(400).json({

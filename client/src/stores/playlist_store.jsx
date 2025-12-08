@@ -413,9 +413,44 @@ function PlaylistStoreContextProvider(props) {
         });
     }
 
+    const loadAllPlaylists = async function(clearModalState = false) {
+        if (!playlistStore) {
+            return;
+        }
+        try {
+            if (clearModalState) {
+                playlistStoreReducer({
+                    type: PlaylistStoreActionType.HIDE_MODALS,
+                    payload: {}
+                });
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+            
+            const response = await playlistRequestSender.getAllPlaylists();
+            if (response.status === 200 && response.data.success) {
+                getAllPlaylists(response.data.playlists || []);
+                setPlaylistStore(prevStore => {
+                    return {
+                        ...prevStore,
+                        playlistsRefreshTrigger: prevStore.playlistsRefreshTrigger + 1
+                    };
+                });
+            }
+        } catch (error) {
+            console.error("Error loading all playlists:", error);
+        }
+    }
+
     const loadUserPlaylists = async function(clearModalState = false) {
         if (!auth.loggedIn || !auth.user?.userId) {
-            console.log("User not logged in, cannot load playlists");
+            // For guests, don't load playlists - leave empty until they search
+            if (clearModalState) {
+                playlistStoreReducer({
+                    type: PlaylistStoreActionType.HIDE_MODALS,
+                    payload: {}
+                });
+            }
+            getAllPlaylists([]);
             return;
         }
         if (!playlistStore) {
@@ -447,7 +482,7 @@ function PlaylistStoreContextProvider(props) {
 
     const searchPlaylists = async function(playlistName, userName, title, artist, year) {
         try {
-            // If all fields are empty, load user's playlists instead
+            // If all fields are empty, load playlists (user's if logged in, all if guest)
             if (!playlistName && !userName && !title && !artist && !year) {
                 await loadUserPlaylists();
                 return;
@@ -538,6 +573,7 @@ function PlaylistStoreContextProvider(props) {
         sortPlaylists,
         duplicatePlaylist,
         deletePlaylist,
+        loadAllPlaylists,
         playPlaylist,
         findPlaylist,
         findPlaylistById,
