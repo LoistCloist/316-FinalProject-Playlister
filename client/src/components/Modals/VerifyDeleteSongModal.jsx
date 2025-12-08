@@ -13,28 +13,29 @@ import { useContext } from 'react';
 export default function VerifyDeleteSongModal() {
     const { songStore } = useContext(SongStoreContext);
     
-    // Use the string directly to match the store's CurrentModal.DELETE_PLAYLIST_MODAL
     const isOpen = songStore?.currentModal === "VERIFY_REMOVE_SONG_MODAL";
     const currentSong = songStore?.currentSong || songStore?.songMarkedForDeletion;
     
     const handleCancel = () => {
-        songStore.hideModals();
+        if (songStore && songStore.hideModals) {
+            songStore.hideModals();
+        }
     }
     
     const handleConfirm = async () => {
-        if (currentSong) {
+        if (currentSong && songStore && songStore.deleteSong) {
             await songStore.deleteSong(currentSong);
         }
     }
 
     return (
         <Dialog open={isOpen} onClose={handleCancel}>
-            <DialogTitle>Delete Playlist</DialogTitle>
+            <DialogTitle>Delete Song</DialogTitle>
             <DialogContent>
                 <Typography>
                     {currentSong ? (
                         <>
-                            Are you sure you want to delete the song "{currentSong.songName}"? 
+                            Are you sure you want to delete the song "{currentSong.title || 'Unknown Title'}" by {currentSong.artist || 'Unknown Artist'}? 
                             This action cannot be undone.
                         </>
                     ) : (

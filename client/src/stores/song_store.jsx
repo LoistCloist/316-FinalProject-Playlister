@@ -15,6 +15,7 @@ const SongStoreActionType = {
     GET_ALL_PLAYLISTS: "GET_ALL_PLAYLISTS",
     GET_USER_SONGS: "GET_USER_SONGS",
     EDIT_SONG: "EDIT_SONG",
+    MARK_SONG_FOR_DELETION: "MARK_SONG_FOR_DELETION",
 }
 
 const tps = new jsTPS();
@@ -32,7 +33,8 @@ function SongStoreContextProvider(props) {
         currentModal: CurrentModal.NONE,
         currentSong: null,
         newSongCounter: 0,
-        songs: []
+        songs: [],
+        songMarkedForDeletion: null
     })
 
     const { auth } = useContext(AuthContext);
@@ -65,7 +67,11 @@ function SongStoreContextProvider(props) {
             case SongStoreActionType.GET_USER_SONGS: {
                 return setSongStore({
                     ...songStore,
-                    songs: payload.songs ? [...payload.songs] : []
+                    songs: payload.songs ? [...payload.songs] : [],
+                    // Ensure modal state is cleared when loading songs
+                    currentModal: CurrentModal.NONE,
+                    currentSong: null,
+                    songMarkedForDeletion: null
                 })
             }
             case SongStoreActionType.HIDE_MODALS: {
@@ -73,6 +79,7 @@ function SongStoreContextProvider(props) {
                     ...songStore,
                     currentModal: CurrentModal.NONE,
                     currentSong: null,
+                    songMarkedForDeletion: null,
                 })
             }
             case SongStoreActionType.EDIT_SONG: {
@@ -80,6 +87,14 @@ function SongStoreContextProvider(props) {
                     ...songStore,
                     currentModal: CurrentModal.EDIT_SONG_MODAL,
                     currentSong: payload.song,
+                })
+            }
+            case SongStoreActionType.MARK_SONG_FOR_DELETION: {
+                return setSongStore({
+                    ...songStore,
+                    currentModal: CurrentModal.VERIFY_REMOVE_SONG_MODAL,
+                    currentSong: payload.song,
+                    songMarkedForDeletion: payload.song,
                 })
             }
             default:
@@ -165,6 +180,90 @@ function SongStoreContextProvider(props) {
         }
     }
 
+    const searchSongs = async function(title, artist, year) {
+        try {
+            // If all fields are empty, load user's songs instead
+            if (!title && !artist && !year) {
+                await loadUserSongs();
+                return;
+            }
+            
+            const response = await songRequestSender.getTargetSongs(
+                title || undefined,
+                artist || undefined,
+                year || undefined
+            );
+            if (response.status === 200 && response.data.success) {
+                // Replace songs array with search results
+                storeReducer({
+                    type: SongStoreActionType.GET_USER_SONGS,
+                    payload: { songs: response.data.songs || [] }
+                });
+            } else {
+                // No results found
+                storeReducer({
+                    type: SongStoreActionType.GET_USER_SONGS,
+                    payload: { songs: [] }
+                });
+            }
+        } catch (error) {
+            console.error("Failed to search songs:", error);
+            if (error.response?.status === 404) {
+                // No results found
+                storeReducer({
+                    type: SongStoreActionType.GET_USER_SONGS,
+                    payload: { songs: [] }
+                });
+            } else {
+                alert('Error searching songs');
+            }
+        }
+    }
+
+    const markSongForDeletion = function(song) {
+        storeReducer({
+            type: SongStoreActionType.MARK_SONG_FOR_DELETION,
+            payload: { song: song }
+        });
+    }
+
+    const deleteSong = async function(song) {
+        if (!song || !song.songId) {
+            console.error('Cannot delete song: invalid song data');
+            return;
+        }
+        try {
+            const response = await songRequestSender.deleteSongById(song.songId);
+            if (response.status === 200 && response.data.success) {
+                // Hide modal first for immediate feedback
+                storeReducer({
+                    type: SongStoreActionType.HIDE_MODALS,
+                    payload: {}
+                });
+                // Reload songs after successful deletion with a small delay
+                await new Promise(resolve => setTimeout(resolve, 100));
+                await loadUserSongs();
+                // Additional delay to ensure state is fully updated
+                await new Promise(resolve => setTimeout(resolve, 50));
+            } else {
+                console.error('Failed to delete song:', response.data);
+                alert('Failed to delete song');
+            }
+        } catch (error) {
+            console.error('Error deleting song:', error);
+            // Hide modal even on error
+            storeReducer({
+                type: SongStoreActionType.HIDE_MODALS,
+                payload: {}
+            });
+            if (error.response?.status === 400 && error.response?.data?.errorMessage?.includes('authorization')) {
+                alert('You can only delete songs that you created');
+            } else {
+                alert('Error deleting song');
+            }
+        }
+    }
+
     // Fetch user songs on startup when user is logged in
     useEffect(() => {
         if (auth.loggedIn && auth.user?.userId) {
@@ -183,7 +282,10 @@ function SongStoreContextProvider(props) {
         undo,
         redo,
         canAddNewSong,
-        loadUserSongs
+        loadUserSongs,
+        searchSongs,
+        markSongForDeletion,
+        deleteSong
     };
 
     return (
