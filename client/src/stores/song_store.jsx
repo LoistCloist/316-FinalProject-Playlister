@@ -304,6 +304,13 @@ function SongStoreContextProvider(props) {
         });
     }
 
+    const updateSongInList = function(song) {
+        storeReducer({
+            type: SongStoreActionType.UPDATE_SONG_IN_LIST,
+            payload: { song: song }
+        });
+    }
+
     const editSong = async function(songId, title, artist, year, youtubeId) {
         if (!songId) {
             console.error('Cannot update song: songId is required');
@@ -372,6 +379,7 @@ function SongStoreContextProvider(props) {
         openEditSongModal,
         editSong,
         updateSongsArray,
+        updateSongInList,
         sortSongs,
         undo,
         redo,

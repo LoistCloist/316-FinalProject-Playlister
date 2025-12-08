@@ -20,6 +20,7 @@ import AuthContext from '../../auth'
 import EditSongModal from '../Modals/EditSongModal'
 import VerifyDeleteSongModal from '../Modals/VerifyDeleteSongModal'
 import AddSongToCatalogModal from '../Modals/AddSongToCatalogModal'
+import songRequestSender from '../../stores/requests/songRequestSender'
 
 function SongCatalogScreen() {
     const { songStore } = useContext(SongStoreContext);
@@ -79,8 +80,27 @@ function SongCatalogScreen() {
         }
     }
     
-    const handlePlaySong = (song) => {
+    const handlePlaySong = async (song) => {
         setCurrentPlayingSong(song);
+        // Increment listens when song is clicked
+        if (song && song.songId) {
+            try {
+                const response = await songRequestSender.incrementListen(song.songId);
+                if (response.status === 200 && response.data.success) {
+                    // Fetch the updated song from server to get latest listens count
+                    const songResponse = await songRequestSender.getSongById(song.songId);
+                    if (songResponse.status === 200 && songResponse.data.success) {
+                        const updatedSong = songResponse.data.song;
+                        // Update the song in the list with the new listens count
+                        if (songStore?.updateSongInList) {
+                            songStore.updateSongInList(updatedSong);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error incrementing listen count:", error);
+            }
+        }
     }
     
     const getYouTubeUrl = (song) => {
