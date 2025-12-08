@@ -21,6 +21,7 @@ export default function SongCard({ song, onPlay }) {
     const [playlistMenuAnchor, setPlaylistMenuAnchor] = useState(null);
     const open = Boolean(anchorEl);
     const playlistMenuOpen = Boolean(playlistMenuAnchor);
+    // Allows mouse to move to nested menu without closing the menu
     const closeTimeoutRef = useRef(null);
     
     // Check if song belongs to the current user
@@ -111,48 +112,25 @@ export default function SongCard({ song, onPlay }) {
         handleMenuClose();
         
         try {
-            // Fetch current playlist to get existing songs
-            const playlistResponse = await playlistRequestSender.getPlaylistById(playlist.playlistId);
-            if (playlistResponse.status !== 200 || !playlistResponse.data.success) {
-                alert('Failed to load playlist');
-                return;
-            }
-            
-            const currentPlaylist = playlistResponse.data.playlist;
-            // Extract song IDs from the songs array (songs may be objects or IDs)
-            const currentSongIds = (currentPlaylist.songs || []).map(s => 
-                typeof s === 'string' ? s : s.songId
-            );
-            
-            // Check if song is already in playlist
-            if (currentSongIds.includes(song.songId)) {
-                alert('Song is already in this playlist');
-                return;
-            }
-            
-            // Add song ID to the playlist (append, not replace)
-            const updatedSongIds = [...currentSongIds, song.songId];
-            
-            // Update playlist
-            const updateResponse = await playlistRequestSender.updatePlaylist(
+            // Use the new addSongToPlaylist endpoint (no ownership check required)
+            const response = await playlistRequestSender.addSongToPlaylist(
                 playlist.playlistId,
-                playlist.playlistName,
-                playlist.userName,
-                playlist.email || auth.user?.email,
-                updatedSongIds
+                song.songId
             );
             
-            if (updateResponse.status === 200 && updateResponse.data.success) {
+            if (response.status === 200 && response.data.success) {
                 // Reload playlists to reflect the change
                 if (playlistStore?.loadUserPlaylists) {
                     await playlistStore.loadUserPlaylists();
                 }
             } else {
-                alert('Failed to add song to playlist');
+                const errorMessage = response.data?.errorMessage || response.data?.message || 'Failed to add song to playlist';
+                alert(errorMessage);
             }
         } catch (error) {
             console.error('Error adding song to playlist:', error);
-            alert('Error adding song to playlist');
+            const errorMessage = error.response?.data?.errorMessage || error.response?.data?.message || 'Error adding song to playlist';
+            alert(errorMessage);
         }
     }
     

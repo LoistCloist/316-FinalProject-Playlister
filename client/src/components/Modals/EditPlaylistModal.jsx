@@ -43,6 +43,7 @@ export default function EditPlaylistModal() {
     const [loading, setLoading] = useState(false);
     const lastPlaylistIdRef = useRef(null);
     const isLoadingRef = useRef(false);
+    const duplicateCountRef = useRef(new Map()); // Track duplicate count per song title
     
     const isOpen = playlistStore?.currentModal === CurrentModal.EDIT_PLAYLIST_MODAL;
     const currentPlaylist = playlistStore?.currentList;
@@ -64,6 +65,7 @@ export default function EditPlaylistModal() {
             // Reset refs when modal closes
             lastPlaylistIdRef.current = null;
             isLoadingRef.current = false;
+            duplicateCountRef.current.clear(); // Reset duplicate counts when modal closes
         }
         // Only depend on isOpen to prevent double-triggering when currentPlaylist reference changes
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,9 +178,46 @@ export default function EditPlaylistModal() {
         navigate('/songs');
     };
 
-    const handleDuplicateSong = (song) => {
-        // Add a copy of the song to the playlist
-        setSongs([...songs, { ...song }]);
+    const handleDuplicateSong = async (song) => {
+        if (!auth.loggedIn || !auth.user) {
+            alert('You must be logged in to duplicate songs');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Get or increment duplicate count for this song title
+            const baseTitle = song.title || 'Untitled';
+            const currentCount = duplicateCountRef.current.get(baseTitle) || 0;
+            const newCount = currentCount + 1;
+            duplicateCountRef.current.set(baseTitle, newCount);
+            
+            // Create new title with duplicate number appended
+            const newTitle = `${baseTitle} ${newCount}`;
+            
+            // Deep clone the song and create a new song entry in the database
+            const response = await songRequestSender.createSong(
+                newTitle,
+                song.artist || '',
+                song.year || '',
+                song.youtubeId || '',
+                auth.user.email
+            );
+            
+            if (response.status === 200 && response.data.success && response.data.song) {
+                // Get the newly created song from the response
+                const newSong = response.data.song;
+                // Add the new song to the playlist
+                setSongs([...songs, newSong]);
+            } else {
+                alert('Failed to create duplicate song');
+            }
+        } catch (error) {
+            console.error('Error duplicating song:', error);
+            alert('Error duplicating song');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleRemoveSong = (songId) => {
