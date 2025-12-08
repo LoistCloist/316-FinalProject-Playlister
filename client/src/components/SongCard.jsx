@@ -8,17 +8,36 @@ import {
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SongStoreContext from '../stores/song_store';
+import PlaylistStoreContext from '../stores/playlist_store';
 import AuthContext from '../auth';
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect, useRef } from 'react';
+import playlistRequestSender from '../stores/requests/playlistRequestSender';
 
 export default function SongCard({ song, onPlay }) {
     const { songStore } = useContext(SongStoreContext);
+    const { playlistStore } = useContext(PlaylistStoreContext);
     const { auth } = useContext(AuthContext);
     const [anchorEl, setAnchorEl] = useState(null);
+    const [playlistMenuAnchor, setPlaylistMenuAnchor] = useState(null);
     const open = Boolean(anchorEl);
+    const playlistMenuOpen = Boolean(playlistMenuAnchor);
+    const closeTimeoutRef = useRef(null);
     
     // Check if song belongs to the current user
     const isOwner = auth.loggedIn && auth.user && song.addedById === auth.user.userId;
+    
+    // Get user's playlists (filtered by userId)
+    const userPlaylists = playlistStore?.playlists?.filter(
+        playlist => auth.loggedIn && auth.user && playlist.userId === auth.user.userId
+    ) || [];
+    
+    // Load user playlists when component mounts or auth changes
+    useEffect(() => {
+        if (auth.loggedIn && auth.user?.userId && playlistStore?.loadUserPlaylists) {
+            playlistStore.loadUserPlaylists();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [auth.loggedIn, auth.user?.userId]);
     
     const handleClick = (event) => {
         event.stopPropagation();
@@ -33,17 +52,120 @@ export default function SongCard({ song, onPlay }) {
     }
     
     const handleMenuClose = () => {
+        // Clear any pending close timeout
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
         setAnchorEl(null);
+        setPlaylistMenuAnchor(null);
     }
     
-    const handleEdit = () => {
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current);
+            }
+        };
+    }, []);
+    
+    const handlePlaylistMenuOpen = (event) => {
+        event.stopPropagation();
+        // Clear any pending close timeout
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
+        setPlaylistMenuAnchor(event.currentTarget);
+    }
+    
+    const handlePlaylistMenuClose = () => {
+        // Clear any pending close timeout
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+        }
+        setPlaylistMenuAnchor(null);
+    }
+    
+    const handlePlaylistMenuItemLeave = () => {
+        // Add a small delay before closing to allow mouse to move to nested menu
+        closeTimeoutRef.current = setTimeout(() => {
+            handlePlaylistMenuClose();
+        }, 150);
+    }
+    
+    const handleNestedMenuEnter = () => {
+        // Clear close timeout when entering nested menu
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
+    }
+    
+    const handleAddToPlaylist = async (playlist, event) => {
+        if (event) {
+            event.stopPropagation();
+        }
+        handlePlaylistMenuClose();
+        handleMenuClose();
+        
+        try {
+            // Fetch current playlist to get existing songs
+            const playlistResponse = await playlistRequestSender.getPlaylistById(playlist.playlistId);
+            if (playlistResponse.status !== 200 || !playlistResponse.data.success) {
+                alert('Failed to load playlist');
+                return;
+            }
+            
+            const currentPlaylist = playlistResponse.data.playlist;
+            // Extract song IDs from the songs array (songs may be objects or IDs)
+            const currentSongIds = (currentPlaylist.songs || []).map(s => 
+                typeof s === 'string' ? s : s.songId
+            );
+            
+            // Check if song is already in playlist
+            if (currentSongIds.includes(song.songId)) {
+                alert('Song is already in this playlist');
+                return;
+            }
+            
+            // Add song ID to the playlist (append, not replace)
+            const updatedSongIds = [...currentSongIds, song.songId];
+            
+            // Update playlist
+            const updateResponse = await playlistRequestSender.updatePlaylist(
+                playlist.playlistId,
+                playlist.playlistName,
+                playlist.userName,
+                playlist.email || auth.user?.email,
+                updatedSongIds
+            );
+            
+            if (updateResponse.status === 200 && updateResponse.data.success) {
+                // Reload playlists to reflect the change
+                if (playlistStore?.loadUserPlaylists) {
+                    await playlistStore.loadUserPlaylists();
+                }
+            } else {
+                alert('Failed to add song to playlist');
+            }
+        } catch (error) {
+            console.error('Error adding song to playlist:', error);
+            alert('Error adding song to playlist');
+        }
+    }
+    
+    const handleEdit = (event) => {
+        event.stopPropagation();
         handleMenuClose();
         if (songStore && songStore.openEditSongModal) {
             songStore.openEditSongModal(song);
         }
     }
     
-    const handleDelete = () => {
+    const handleDelete = (event) => {
+        event.stopPropagation();
         handleMenuClose();
         if (songStore && songStore.markSongForDeletion) {
             songStore.markSongForDeletion(song);
@@ -95,11 +217,62 @@ export default function SongCard({ song, onPlay }) {
             <Menu
                 anchorEl={anchorEl}
                 open={open}
-                onClose={handleMenuClose}
+                onClose={(event) => {
+                    event?.stopPropagation();
+                    handleMenuClose();
+                }}
+                onClick={(event) => {
+                    event.stopPropagation();
+                }}
             >
                 {isOwner && <MenuItem onClick={handleEdit}>Edit</MenuItem>}
                 {isOwner && <MenuItem onClick={handleDelete}>Delete</MenuItem>}
+                {auth.loggedIn && userPlaylists.length > 0 && (
+                    <MenuItem 
+                        onMouseEnter={handlePlaylistMenuOpen}
+                        onMouseLeave={handlePlaylistMenuItemLeave}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                        }}
+                    >
+                        Add to Playlist
+                    </MenuItem>
+                )}
             </Menu>
+            {auth.loggedIn && userPlaylists.length > 0 && (
+                <Menu
+                    anchorEl={playlistMenuAnchor}
+                    open={playlistMenuOpen}
+                    onClose={(event) => {
+                        event?.stopPropagation();
+                        handlePlaylistMenuClose();
+                    }}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                    }}
+                    MenuListProps={{
+                        onMouseEnter: handleNestedMenuEnter,
+                        onMouseLeave: handlePlaylistMenuClose
+                    }}
+                    anchorOrigin={{
+                        vertical: 'top',
+                        horizontal: 'right',
+                    }}
+                    transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'left',
+                    }}
+                >
+                    {userPlaylists.map((playlist) => (
+                        <MenuItem 
+                            key={playlist.playlistId}
+                            onClick={(event) => handleAddToPlaylist(playlist, event)}
+                        >
+                            {playlist.playlistName}
+                        </MenuItem>
+                    ))}
+                </Menu>
+            )}
         </Paper>
     );
 }
