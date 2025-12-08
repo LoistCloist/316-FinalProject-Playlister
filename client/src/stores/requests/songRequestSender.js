@@ -40,6 +40,9 @@ export const getUserSongs = (userId) => {
 export const deleteSongById = (id) => {
     return api.delete(`/songs/${id}`)
 }
+export const incrementListen = (songId) => {
+    return api.post(`/songs/${songId}/listen`)
+}
 export const searchSongs = (title, artist, year) => {
     const params = {};
     if (title) params.title = title;
@@ -56,7 +59,8 @@ const apis = {
     editSongById,
     getAllSongsInPlaylist,
     getUserSongs,
-    deleteSongById
+    deleteSongById,
+    incrementListen
 }
 
 export default apis

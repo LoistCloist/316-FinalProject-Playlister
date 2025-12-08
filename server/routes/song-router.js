@@ -10,5 +10,6 @@ router.get('/songs/:id', SongController.getSongById) // Public - guests can view
 router.put('/songs/:id', auth.verify, SongController.editSongById)
 router.get('/userSongs/:id', auth.verify, SongController.getUserSongs) // Requires auth - user's own songs
 router.delete('/songs/:id', auth.verify, SongController.deleteSongById)
+router.post('/songs/:id/listen', SongController.incrementListen) // Public - guests and users can increment listens
 
 module.exports = router

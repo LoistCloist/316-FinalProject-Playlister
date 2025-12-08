@@ -199,6 +199,31 @@ deleteSongById = async (req, res) => {
     return res.status(200).json({ success: true, song: deletedSong });
 }
 
+incrementListen = async (req, res) => {
+    const songId = req.params.id;
+    if (!songId) {
+        return res.status(400).json({
+            errorMessage: "Song ID is required."
+        });
+    }
+    
+    const song = await Song.findOne({ songId: songId });
+    if (!song) {
+        return res.status(404).json({
+            errorMessage: "Song not found!"
+        });
+    }
+    
+    // Increment listens count
+    song.listens = (song.listens || 0) + 1;
+    await song.save();
+    
+    return res.status(200).json({
+        success: true,
+        listens: song.listens
+    });
+}
+
 module.exports = {
     createSong,
     getTargetSongs,
@@ -206,5 +231,6 @@ module.exports = {
     editSongById,
     getAllSongsInPlaylist,
     getUserSongs,
-    deleteSongById
+    deleteSongById,
+    incrementListen
 }
