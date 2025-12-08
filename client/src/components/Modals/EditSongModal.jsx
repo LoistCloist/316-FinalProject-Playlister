@@ -13,8 +13,6 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SongStoreContext from '../../stores/song_store';
-import AuthContext from '../../auth';
-import songRequestSender from '../../stores/requests/songRequestSender';
 
 const CurrentModal = {
     NONE: "NONE",
@@ -23,7 +21,6 @@ const CurrentModal = {
 
 export default function EditSongModal() {
     const { songStore } = useContext(SongStoreContext);
-    const { auth } = useContext(AuthContext);
     
     const [title, setTitle] = useState('');
     const [artist, setArtist] = useState('');
@@ -58,25 +55,19 @@ export default function EditSongModal() {
 
         setLoading(true);
         try {
-            const response = await songRequestSender.editSongById(
+            if (songStore && songStore.editSong) {
+                const success = await songStore.editSong(
                 currentSong.songId,
-                title.trim(),
-                artist.trim(),
-                year.trim(),
-                youtubeId.trim()
+                    title,
+                    artist,
+                    year,
+                    youtubeId
             );
-            
-            if (response.status === 200 && response.data.success) {
-                // Reload user songs to reflect changes
-                if (songStore && songStore.loadUserSongs && auth.loggedIn && auth.user?.userId) {
-                    await songStore.loadUserSongs();
+                if (success) {
+                    handleCancel();
                 }
-                // Small delay to ensure store updates before closing
-                await new Promise(resolve => setTimeout(resolve, 100));
-                handleCancel();
             } else {
-                console.error('Failed to update song:', response.data);
-                alert('Failed to update song');
+                alert('Error: Song store not available');
             }
         } catch (error) {
             console.error('Error updating song:', error);
