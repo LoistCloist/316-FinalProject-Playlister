@@ -340,11 +340,65 @@ function PlaylistStoreContextProvider(props) {
         });
     }
 
-    const duplicatePlaylist = function(list) {
-        playlistStoreReducer({
-            type: PlaylistStoreActionType.DUPLICATE_PLAYLIST,
-            payload: { list: list }
-        });
+    const duplicatePlaylist = async function(list) {
+        if (!list || !list.playlistId) {
+            console.error('Cannot duplicate playlist: invalid playlist data');
+            return;
+        }
+        
+        if (!auth.loggedIn || !auth.user) {
+            alert('You must be logged in to duplicate playlists');
+            return;
+        }
+        
+        try {
+            const response = await playlistRequestSender.duplicatePlaylist(list.playlistId);
+            if (response.status === 200 && response.data.success && response.data.playlist) {
+                const duplicatedPlaylist = response.data.playlist;
+                
+                const existingPlaylists = playlistStore.playlists.filter(p => 
+                    p.playlistName && p.playlistName.startsWith(duplicatedPlaylist.playlistName) && 
+                    p.playlistName !== duplicatedPlaylist.playlistName
+                );
+                const duplicateNumber = existingPlaylists.length + 1;
+                const newPlaylistName = `${duplicatedPlaylist.playlistName} ${duplicateNumber}`;
+                
+                const updateResponse = await playlistRequestSender.updatePlaylist(
+                    duplicatedPlaylist.playlistId,
+                    newPlaylistName,
+                    duplicatedPlaylist.userName,
+                    duplicatedPlaylist.email || auth.user?.email,
+                    duplicatedPlaylist.songs || []
+                );
+                
+                if (updateResponse.status === 200 && updateResponse.data.success) {
+                    const newPlaylist = {
+                        ...duplicatedPlaylist,
+                        playlistName: newPlaylistName,
+                        userAvatar: auth.user?.avatar || null
+                    };
+                    
+                    playlistStoreReducer({
+                        type: PlaylistStoreActionType.CREATE_NEW_LIST,
+                        payload: {
+                            newListCounter: playlistStore.newListCounter + 1,
+                            currentList: newPlaylist
+                        }
+                    });
+                    
+                    await loadUserPlaylists();
+                } else {
+                    console.error('Failed to update duplicated playlist name:', updateResponse.data);
+                    alert('Playlist duplicated but failed to update name');
+                }
+            } else {
+                console.error('Failed to duplicate playlist:', response.data);
+                alert(response.data?.errorMessage || 'Failed to duplicate playlist');
+            }
+        } catch (error) {
+            console.error('Error duplicating playlist:', error);
+            alert(error.response?.data?.errorMessage || 'Error duplicating playlist');
+        }
     }
 
     const deletePlaylist = async function(list) {
@@ -456,13 +510,21 @@ function PlaylistStoreContextProvider(props) {
             
             const response = await playlistRequestSender.getUserPlaylists(auth.user.userId);
             if (response.status === 200 && response.data.success) {
-                getAllPlaylists(response.data.playlists || []);
-                setPlaylistStore(prevStore => {
-                    return {
-                        ...prevStore,
-                        playlistsRefreshTrigger: prevStore.playlistsRefreshTrigger + 1
-                    };
-                });
+                const newPlaylists = response.data.playlists || [];
+                const currentPlaylists = playlistStore.playlists || [];
+                const playlistsChanged = JSON.stringify(currentPlaylists.map(p => p.playlistId).sort()) !== 
+                                         JSON.stringify(newPlaylists.map(p => p.playlistId).sort());
+                
+                getAllPlaylists(newPlaylists);
+                
+                if (playlistsChanged) {
+                    setPlaylistStore(prevStore => {
+                        return {
+                            ...prevStore,
+                            playlistsRefreshTrigger: prevStore.playlistsRefreshTrigger + 1
+                        };
+                    });
+                }
             }
         } catch (error) {
             console.error("Error loading user playlists:", error);

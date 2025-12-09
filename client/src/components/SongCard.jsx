@@ -33,13 +33,6 @@ export default function SongCard({ song, onPlay }) {
         playlist => auth.loggedIn && auth.user && playlist.userId === auth.user.userId
     ) || [];
     
-    // Load user playlists when component mounts or auth changes
-    useEffect(() => {
-        if (auth.loggedIn && auth.user?.userId && playlistStore?.loadUserPlaylists) {
-            playlistStore.loadUserPlaylists();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [auth.loggedIn, auth.user?.userId]);
     
     const handleClick = (event) => {
         event.stopPropagation();

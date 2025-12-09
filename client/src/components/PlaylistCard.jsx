@@ -38,6 +38,7 @@ export default function PlaylistCard({ playlist }) {
     }    
     const handleCopy = (event) => {
         event.stopPropagation();
+        playlistStore.duplicatePlaylist(playlist);
     }    
     const handlePlay = (event) => {
         event.stopPropagation();
