@@ -4,9 +4,10 @@
   "description": "Final project for SBU's CSE316 in Fall 2025",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "repository": {
     "type": "git",
@@ -26,9 +27,12 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.20.0"
+    "mongoose": "^8.20.0",
+    "vitest": "^latest"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "nodemon": "^3.1.11",
+    "supertest": "^7.1.4",
+    "vitest": "^4.0.15"
   }
 }
