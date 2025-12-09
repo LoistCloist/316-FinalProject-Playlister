@@ -1,7 +1,10 @@
-import { createContext, useContext, useState } from 'react'
-import { jsTPS } from "jstps"
+import { createContext, useContext, useState, useRef } from 'react'
+import { jsTPS, TRANSACTION_STACK_EXCEPTION } from "jstps"
 import AuthContext from '../auth'
 import playlistRequestSender from './requests/playlistRequestSender'
+import songRequestSender from './requests/songRequestSender'
+import DuplicateSongInPlaylist_Transaction from '../transactions/DuplicateSongInPlaylist_Transaction'
+import RemoveSongFromPlaylist_Transaction from '../transactions/RemoveSongFromPlaylist_Transaction'
 
 const PlaylistStoreContext = createContext({});
 console.log("created PlaylistStoreContext");
@@ -48,6 +51,7 @@ function PlaylistStoreContextProvider(props) {
     })
 
     const { auth } = useContext(AuthContext);
+    const duplicateCountRef = useRef(new Map()); // Track duplicate count per song title
 
     const playlistStoreReducer = (action) => {
         const { type, payload } = action;
@@ -181,13 +185,12 @@ function PlaylistStoreContextProvider(props) {
                 });
             }
             case PlaylistStoreActionType.UPDATE_PLAYLIST_IN_LIST: {
-                // Use functional update to read the latest state (important for async state updates)
                 return setPlaylistStore(prevStore => {
                     const updatedPlaylists = prevStore.playlists.map(playlist => 
                         playlist.playlistId === payload.playlist.playlistId ? payload.playlist : playlist
                     );
                     
-                    // Preserve currentList if modal is open (EDIT or PLAY)
+                    // Preserve currentList if modal is ope
                     const isEditModal = prevStore.currentModal === CurrentModal.EDIT_PLAYLIST_MODAL;
                     const isPlayModal = prevStore.currentModal === CurrentModal.PLAY_PLAYLIST_MODAL;
                     
@@ -236,19 +239,6 @@ function PlaylistStoreContextProvider(props) {
                     ...playlistStore,
                     currentListSongs: newSongs
                 })
-            }
-            case PlaylistStoreActionType.DUPLICATE_SONG_IN_PLAYLIST: {
-                const songToDuplicate = playlistStore.currentListSongs.find(
-                    song => song.songId === payload.songId
-                );
-                if (songToDuplicate) {
-                    const newSongs = [...playlistStore.currentListSongs, { ...songToDuplicate }];
-                    return setPlaylistStore({
-                        ...playlistStore,
-                        currentListSongs: newSongs
-                    })
-                }
-                return playlistStore;
             }
             default:
                 return playlistStore;
@@ -370,7 +360,6 @@ function PlaylistStoreContextProvider(props) {
         try {
             const response = await playlistRequestSender.deletePlaylistById(list.playlistId);
             if (response.status === 200 && response.data.success) {
-                // Hide modal first
                 playlistStoreReducer({
                     type: PlaylistStoreActionType.HIDE_MODALS,
                     payload: {
@@ -378,9 +367,7 @@ function PlaylistStoreContextProvider(props) {
                         currentList: null
                     }
                 });
-                // Reload playlists after successful deletion
                 await loadUserPlaylists();
-                // Small delay to ensure store updates before component re-renders
                 await new Promise(resolve => setTimeout(resolve, 100));
             } else {
                 console.error('Failed to delete playlist:', response.data);
@@ -450,7 +437,7 @@ function PlaylistStoreContextProvider(props) {
 
     const loadUserPlaylists = async function(clearModalState = false) {
         if (!auth.loggedIn || !auth.user?.userId) {
-            // For guests, don't load playlists - leave empty until they search
+            // For guests, don't load playlists leave empty until they search
             if (clearModalState) {
                 playlistStoreReducer({
                     type: PlaylistStoreActionType.HIDE_MODALS,
@@ -489,7 +476,6 @@ function PlaylistStoreContextProvider(props) {
 
     const searchPlaylists = async function(playlistName, userName, title, artist, year) {
         try {
-            // If all fields are empty, load playlists (user's if logged in, all if guest)
             if (!playlistName && !userName && !title && !artist && !year) {
                 await loadUserPlaylists();
                 return;
@@ -506,13 +492,11 @@ function PlaylistStoreContextProvider(props) {
                 // Replace playlists array with search results
                 getAllPlaylists(response.data.playlists || []);
             } else {
-                // No results found
                 getAllPlaylists([]);
             }
         } catch (error) {
             console.error("Failed to search playlists:", error);
             if (error.response?.status === 404 || error.response?.status === 400) {
-                // No results found or invalid request
                 getAllPlaylists([]);
             } else {
                 alert('Error searching playlists');
@@ -521,18 +505,57 @@ function PlaylistStoreContextProvider(props) {
     }
 
     const undo = function() {
-        tps.undoTransaction();
+        try {
+            if (tps.hasTransactionToUndo()) {
+                tps.undoTransaction();
+            } else {
+                console.warn('[PLAYLIST STORE] No transactions to undo');
+            }
+        } catch (error) {
+            if (error === TRANSACTION_STACK_EXCEPTION) {
+                console.warn('[PLAYLIST STORE] No transactions to undo (caught exception)');
+            } else {
+                console.error('[PLAYLIST STORE] Error undoing transaction:', error);
+                throw error;
+            }
+        }
     }
 
     const redo = function() {
-        tps.doTransaction();
+        try {
+            if (tps.hasTransactionToDo()) {
+                tps.doTransaction();
+            } else {
+                console.warn('[PLAYLIST STORE] No transactions to redo');
+            }
+        } catch (error) {
+            if (error === TRANSACTION_STACK_EXCEPTION) {
+                console.warn('[PLAYLIST STORE] No transactions to redo (caught exception)');
+            } else {
+                console.error('[PLAYLIST STORE] Error redoing transaction:', error);
+                throw error;
+            }
+        }
+    }
+    const addDuplicateSongInPlaylistTransaction = function(songId) {
+        try {
+            let transaction = new DuplicateSongInPlaylist_Transaction(this, songId);
+            tps.processTransaction(transaction);
+        } catch (error) {
+            console.error('[PLAYLIST STORE] Error adding duplicate song transaction:', error);
+            throw error;
+        }
+    }
+    const addRemoveSongFromPlaylistTransaction = function(song) {
+        try {
+            let transaction = new RemoveSongFromPlaylist_Transaction(this, song);
+            tps.processTransaction(transaction);
+        } catch (error) {
+            console.error('[PLAYLIST STORE] Error adding remove song transaction:', error);
+            throw error;
+        }
     }
 
-    const addTransaction = function(transaction) {
-        tps.addTransaction(transaction);
-    }
-
-    // Methods for managing current playlist songs (used by transactions)
     const setCurrentListSongs = function(songs) {
         playlistStoreReducer({
             type: PlaylistStoreActionType.SET_CURRENT_LIST_SONGS,
@@ -547,28 +570,146 @@ function PlaylistStoreContextProvider(props) {
         });
     }
 
-    const addSongToPlaylist = function(song) {
-        playlistStoreReducer({
-            type: PlaylistStoreActionType.ADD_SONG_TO_PLAYLIST,
-            payload: { song: song }
-        });
+    const addSongToPlaylist = async function(songId) {
+        try {
+            const response = await songRequestSender.getSongById(songId);
+            if (response.status === 200 && response.data.success && response.data.song) {
+                const song = response.data.song;
+                playlistStoreReducer({
+                    type: PlaylistStoreActionType.ADD_SONG_TO_PLAYLIST,
+                    payload: { song: song }
+                });
+            } else {
+                console.error('Failed to fetch song by ID:', songId);
+                throw new Error('Failed to fetch song');
+            }
+        } catch (error) {
+            console.error('Error fetching song by ID:', error);
+            throw error;
+        }
     }
 
-    const removeSongFromPlaylist = function(songId) {
-        playlistStoreReducer({
-            type: PlaylistStoreActionType.REMOVE_SONG_FROM_PLAYLIST,
-            payload: { songId: songId }
-        });
+    const removeSongFromPlaylist = async function(songId) {
+        try {
+            const response = await songRequestSender.getSongById(songId);
+            if (response.status === 200 && response.data.success && response.data.song) {
+                const song = response.data.song;
+                playlistStoreReducer({
+                    type: PlaylistStoreActionType.REMOVE_SONG_FROM_PLAYLIST,
+                    payload: { songId: song.songId }
+                });
+                addRemoveSongFromPlaylistTransaction(song);
+            } else {
+                console.error('Failed to fetch song by ID:', songId);
+                throw new Error('Failed to fetch song');
+            }
+        } catch (error) {
+            console.error('Error fetching song by ID:', error);
+            throw error;
+        }
     }
 
-    const duplicateSong = function(songId) {
-        playlistStoreReducer({
-            type: PlaylistStoreActionType.DUPLICATE_SONG_IN_PLAYLIST,
-            payload: { songId: songId }
-        });
+    const duplicateSong = async function(song) {
+        if (!auth.loggedIn || !auth.user) {
+            throw new Error('You must be logged in to duplicate songs');
+        }
+
+        try {
+            // Get or increment duplicate count for this song title
+            const baseTitle = song.title || 'Untitled';
+            const currentCount = duplicateCountRef.current.get(baseTitle) || 0;
+            const newCount = currentCount + 1;
+            duplicateCountRef.current.set(baseTitle, newCount);
+            
+            const newTitle = `${baseTitle} ${newCount}`;
+            
+            // Deep clone the song and create a new song entry in the database
+            const response = await songRequestSender.createSong(
+                newTitle,
+                song.artist || '',
+                song.year || '',
+                song.youtubeId || '',
+                auth.user.email
+            );
+            
+            if (response.status === 200 && response.data.success && response.data.song) {
+                const newSong = response.data.song;
+                addDuplicateSongInPlaylistTransaction(newSong.songId);
+                return newSong;
+            } else {
+                throw new Error('Failed to create duplicate song');
+            }
+        } catch (error) {
+            console.error('Error duplicating song:', error);
+            throw error;
+        }
     }
 
-    // Combine state and methods without mutating the state object
+    const savePlaylistChanges = async function(playlistName, songs) {
+        const currentPlaylist = playlistStore.currentList;
+        if (!currentPlaylist) {
+            throw new Error('No playlist selected');
+        }
+
+        if (!auth.loggedIn || !auth.user) {
+            throw new Error('You must be logged in to save playlist changes');
+        }
+
+        try {
+            const processedSongs = await Promise.all(songs.map(async (song) => {
+                // Check if this is a duplicated song with a temporary ID
+                if (song.songId && song.songId.startsWith('temp-')) {
+                    const response = await songRequestSender.createSong(
+                        song.title || 'Untitled',
+                        song.artist || '',
+                        song.year || '',
+                        song.youtubeId || '',
+                        auth.user.email
+                    );
+                    
+                    if (response.status === 200 && response.data.success && response.data.song) {
+                        return response.data.song;
+                    } else {
+                        throw new Error(`Failed to create duplicate song: ${song.title}`);
+                    }
+                }
+                return song;
+            }));
+
+            // Extract song IDs (now all should be real IDs)
+            const songIds = processedSongs.map(song => song.songId);
+            
+            // Update the playlist with the processed songs
+            const response = await playlistRequestSender.updatePlaylist(
+                currentPlaylist.playlistId,
+                playlistName,
+                currentPlaylist.userName,
+                currentPlaylist.email || auth.user?.email,
+                songIds
+            );
+
+            if (response.status === 200 && response.data.success) {
+                //  update the playlist in the local array
+                const updatedPlaylist = {
+                    ...currentPlaylist,
+                    playlistName: playlistName,
+                    songs: processedSongs
+                };
+                updatePlaylistInList(updatedPlaylist);
+                
+                hideModals();
+                
+                await loadUserPlaylists(true);
+            } else {
+                console.error('Failed to update playlist:', response.data);
+                throw new Error('Failed to update playlist');
+            }
+        } catch (error) {
+            console.error('Error updating playlist:', error);
+            throw error;
+        }
+    }
+
     const playlistStoreWithMethods = {
         ...playlistStore,
         createNewList,
@@ -589,12 +730,14 @@ function PlaylistStoreContextProvider(props) {
         searchPlaylists,
         undo,
         redo,
-        addTransaction,
+        addDuplicateSongInPlaylistTransaction,
+        addRemoveSongFromPlaylistTransaction,
         setCurrentListSongs,
         setCurrentListName,
         addSongToPlaylist,
         removeSongFromPlaylist,
-        duplicateSong
+        duplicateSong,
+        savePlaylistChanges,
     };
 
     return (

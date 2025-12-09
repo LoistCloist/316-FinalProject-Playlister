@@ -23,9 +23,8 @@ import AddIcon from '@mui/icons-material/Add';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
+import { jsTPS, jsTPS_Transaction, TRANSACTION_STACK_EXCEPTION } from 'jstps';
 import PlaylistStoreContext from '../../stores/playlist_store';
-import AuthContext from '../../auth';
-import playlistRequestSender from '../../stores/requests/playlistRequestSender';
 import songRequestSender from '../../stores/requests/songRequestSender';
 
 const CurrentModal = {
@@ -33,9 +32,60 @@ const CurrentModal = {
     EDIT_PLAYLIST_MODAL: "EDIT_PLAYLIST_MODAL",
 };
 
+class DuplicateSongTransaction extends jsTPS_Transaction {
+    constructor(initSongs, initNewSong, initSetSongs, initGetSongs) {
+        super();
+        this.songs = initSongs;
+        this.newSong = initNewSong;
+        this.setSongs = initSetSongs;
+        this.getSongs = initGetSongs;
+    }
+
+    executeDo() {
+        const currentSongs = this.getSongs();
+        this.setSongs([...currentSongs, this.newSong]);
+    }
+
+    executeUndo() {
+        const currentSongs = this.getSongs();
+        this.setSongs(currentSongs.filter(song => song.songId !== this.newSong.songId));
+    }
+}
+
+class RemoveSongTransaction extends jsTPS_Transaction {
+    constructor(initSongs, initSongToRemove, initSetSongs, initGetSongs) {
+        super();
+        this.songs = initSongs;
+        this.songToRemove = initSongToRemove;
+        this.setSongs = initSetSongs;
+        this.getSongs = initGetSongs;
+    }
+
+    executeDo() {
+        const currentSongs = this.getSongs();
+        this.setSongs(currentSongs.filter(song => song.songId !== this.songToRemove.songId));
+    }
+
+    executeUndo() {
+        const currentSongs = this.getSongs();
+        const songExists = currentSongs.some(song => song.songId === this.songToRemove.songId);
+        if (!songExists) {
+            // Find the original position to insert at (or append if not found)
+            const originalIndex = this.songs.findIndex(song => song.songId === this.songToRemove.songId);
+            if (originalIndex >= 0 && originalIndex < currentSongs.length) {
+                const newSongs = [...currentSongs];
+                newSongs.splice(originalIndex, 0, this.songToRemove);
+                this.setSongs(newSongs);
+            } else {
+                this.setSongs([...currentSongs, this.songToRemove]);
+            }
+        }
+    }
+}
+
+
 export default function EditPlaylistModal() {
     const { playlistStore } = useContext(PlaylistStoreContext);
-    const { auth } = useContext(AuthContext);
     const navigate = useNavigate();
     
     const [playlistName, setPlaylistName] = useState('');
@@ -43,7 +93,15 @@ export default function EditPlaylistModal() {
     const [loading, setLoading] = useState(false);
     const lastPlaylistIdRef = useRef(null);
     const isLoadingRef = useRef(false);
-    const duplicateCountRef = useRef(new Map()); // Track duplicate count per song title
+    
+    const songsRef = useRef([]);
+    
+    // Update ref whenever songs change
+    useEffect(() => {
+        songsRef.current = songs;
+    }, [songs]);
+    
+    const tpsRef = useRef(new jsTPS());
     
     const isOpen = playlistStore?.currentModal === CurrentModal.EDIT_PLAYLIST_MODAL;
     const currentPlaylist = playlistStore?.currentList;
@@ -56,8 +114,11 @@ export default function EditPlaylistModal() {
             if (playlistId !== lastPlaylistIdRef.current && !isLoadingRef.current) {
                 lastPlaylistIdRef.current = playlistId;
                 isLoadingRef.current = true;
-                setPlaylistName(currentPlaylist.playlistName || '');
+                const initialName = currentPlaylist.playlistName || '';
+                setPlaylistName(initialName);
                 loadPlaylistSongs().finally(() => {
+                    // Reset transaction stack when loading new playlist
+                    tpsRef.current = new jsTPS();
                     isLoadingRef.current = false;
                 });
             }
@@ -65,17 +126,14 @@ export default function EditPlaylistModal() {
             // Reset refs when modal closes
             lastPlaylistIdRef.current = null;
             isLoadingRef.current = false;
-            duplicateCountRef.current.clear(); // Reset duplicate counts when modal closes
         }
-        // Only depend on isOpen to prevent double-triggering when currentPlaylist reference changes
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
 
-    // Load full song details for the playlist
     const loadPlaylistSongs = async () => {
         if (!currentPlaylist || !currentPlaylist.playlistId) {
             setSongs([]);
-            return;
+            return [];
         }
 
         try {
@@ -87,10 +145,9 @@ export default function EditPlaylistModal() {
                 if (playlistSongs.length > 0) {
                     const firstSong = playlistSongs[0];
                     if (firstSong && typeof firstSong === 'object' && firstSong.songId && firstSong.title) {
-                        // Songs are already full objects
                         setSongs(playlistSongs);
+                        return playlistSongs;
                     } else {
-                        // Songs are IDs, need to fetch full details
                         const songPromises = playlistSongs.map(async (songId) => {
                             try {
                                 const songResponse = await songRequestSender.getSongById(songId);
@@ -104,17 +161,22 @@ export default function EditPlaylistModal() {
                         });
                         
                         const loadedSongs = await Promise.all(songPromises);
-                        setSongs(loadedSongs.filter(song => song !== null));
+                        const validSongs = loadedSongs.filter(song => song !== null);
+                        setSongs(validSongs);
+                        return validSongs;
                     }
                 } else {
                     setSongs([]);
+                    return [];
                 }
             } else {
                 setSongs([]);
+                return [];
             }
         } catch (error) {
             console.error('Error loading playlist songs:', error);
             setSongs([]);
+            return [];
         }
     };
 
@@ -124,6 +186,7 @@ export default function EditPlaylistModal() {
         }
         setPlaylistName('');
         setSongs([]);
+        tpsRef.current = new jsTPS();
     };
 
     const handleConfirm = async () => {
@@ -131,40 +194,16 @@ export default function EditPlaylistModal() {
         
         setLoading(true);
         try {
-            const songIds = songs.map(song => song.songId);
-            const response = await playlistRequestSender.updatePlaylist(
-                currentPlaylist.playlistId,
-                playlistName,
-                currentPlaylist.userName,
-                currentPlaylist.email || auth.user?.email,
-                songIds
-            );
-
-            if (response.status === 200 && response.data.success) {
-                // Optimistically update the playlist in the local array (immediate UI feedback)
-                const updatedPlaylist = {
-                    ...currentPlaylist,
-                    playlistName: playlistName,
-                    songs: songs // Update with the current songs array
-                };
-                if (playlistStore?.updatePlaylistInList) {
-                    playlistStore.updatePlaylistInList(updatedPlaylist);
-                }
-                
-                // Close modal first
+            if (playlistStore?.savePlaylistChanges) {
+                await playlistStore.savePlaylistChanges(playlistName, songs);
                 handleCancel();
-                
-                // Reload playlists to sync with server (after modal is closed)
-                if (playlistStore?.loadUserPlaylists) {
-                    await playlistStore.loadUserPlaylists(true);
-                }
+                await playlistStore.loadUserPlaylists();
             } else {
-                console.error('Failed to update playlist:', response.data);
-                alert('Failed to update playlist');
+                alert('Save playlist functionality not available');
             }
         } catch (error) {
             console.error('Error updating playlist:', error);
-            alert('Error updating playlist');
+            alert(error.message || 'Error updating playlist');
         } finally {
             setLoading(false);
         }
@@ -178,69 +217,60 @@ export default function EditPlaylistModal() {
         navigate('/songs');
     };
 
-    const handleDuplicateSong = async (song) => {
-        if (!auth.loggedIn || !auth.user) {
-            alert('You must be logged in to duplicate songs');
-            return;
-        }
-
-        setLoading(true);
-        try {
-            // Get or increment duplicate count for this song title
-            const baseTitle = song.title || 'Untitled';
-            const currentCount = duplicateCountRef.current.get(baseTitle) || 0;
-            const newCount = currentCount + 1;
-            duplicateCountRef.current.set(baseTitle, newCount);
-            
-            // Create new title with duplicate number appended
-            const newTitle = `${baseTitle} ${newCount}`;
-            
-            // Deep clone the song and create a new song entry in the database
-            const response = await songRequestSender.createSong(
-                newTitle,
-                song.artist || '',
-                song.year || '',
-                song.youtubeId || '',
-                auth.user.email
-            );
-            
-            if (response.status === 200 && response.data.success && response.data.song) {
-                // Get the newly created song from the response
-                const newSong = response.data.song;
-                // Add the new song to the playlist
-                setSongs([...songs, newSong]);
-            } else {
-                alert('Failed to create duplicate song');
-            }
-        } catch (error) {
-            console.error('Error duplicating song:', error);
-            alert('Error duplicating song');
-        } finally {
-            setLoading(false);
-        }
+    const handleDuplicateSong = (song) => {
+        const baseTitle = song.title || 'Untitled';
+        const existingDuplicates = songs.filter(s => 
+            s.title && s.title.startsWith(baseTitle) && s.title !== baseTitle
+        );
+        const duplicateNumber = existingDuplicates.length + 1;
+        const newTitle = `${baseTitle} ${duplicateNumber}`;
+        
+        const duplicatedSong = {
+            ...song,
+            title: newTitle,
+            songId: `temp-${Date.now()}-${Math.random()}`
+        };
+        
+        const transaction = new DuplicateSongTransaction(songs, duplicatedSong, setSongs, () => songsRef.current);
+        tpsRef.current.processTransaction(transaction);
     };
 
     const handleRemoveSong = (songId) => {
-        setSongs(songs.filter(song => song.songId !== songId));
+        const songToRemove = songs.find(song => song.songId === songId);
+        if (!songToRemove) {
+            console.error('Song not found for removal:', songId);
+            return;
+        }
+        
+        const transaction = new RemoveSongTransaction(songs, songToRemove, setSongs, () => songsRef.current);
+        tpsRef.current.processTransaction(transaction);
     };
 
     const handleUndo = () => {
-        if (playlistStore.undo) {
-            playlistStore.undo();
-            // Reload songs after undo
-            setTimeout(() => {
-                loadPlaylistSongs();
-            }, 100);
+        try {
+            if (tpsRef.current.hasTransactionToUndo()) {
+                tpsRef.current.undoTransaction();
+            }
+        } catch (error) {
+            if (error === TRANSACTION_STACK_EXCEPTION) {
+                console.warn('[EDIT PLAYLIST MODAL] No transactions to undo');
+            } else {
+                console.error('[EDIT PLAYLIST MODAL] Error undoing transaction:', error);
+            }
         }
     };
 
     const handleRedo = () => {
-        if (playlistStore.redo) {
-            playlistStore.redo();
-            // Reload songs after redo
-            setTimeout(() => {
-                loadPlaylistSongs();
-            }, 100);
+        try {
+            if (tpsRef.current.hasTransactionToDo()) {
+                tpsRef.current.doTransaction();
+            }
+        } catch (error) {
+            if (error === TRANSACTION_STACK_EXCEPTION) {
+                console.warn('[EDIT PLAYLIST MODAL] No transactions to redo');
+            } else {
+                console.error('[EDIT PLAYLIST MODAL] Error redoing transaction:', error);
+            }
         }
     };
 
@@ -284,7 +314,6 @@ export default function EditPlaylistModal() {
                 
                 <DialogContent sx={{ backgroundColor: '#1a1a1a', color: 'white', mt: 2 }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {/* Playlist Name Field */}
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <TextField
                                 label="Playlist Name"
@@ -336,7 +365,6 @@ export default function EditPlaylistModal() {
                             </Button>
                         </Box>
 
-                        {/* Songs List */}
                         <Box sx={{ mt: 2 }}>
                             <Typography variant="h6" sx={{ mb: 1, color: 'white' }}>
                                 Songs ({songs.length})
@@ -354,8 +382,8 @@ export default function EditPlaylistModal() {
                                             sx={{ 
                                                 mb: 1, 
                                                 p: 1,
-                                                backgroundColor: '#2a2a2a', // Dark gray
-                                                border: '1px solid #285238', // Primary green border
+                                                backgroundColor: '#2a2a2a',
+                                                border: '1px solid #285238',
                                                 color: 'white'
                                             }}
                                         >
@@ -407,10 +435,15 @@ export default function EditPlaylistModal() {
                             variant="contained"
                             startIcon={<UndoIcon />}
                             onClick={handleUndo}
+                            disabled={!tpsRef.current.hasTransactionToUndo()}
                             sx={{
                                 backgroundColor: '#285238',
                                 '&:hover': {
                                     backgroundColor: '#4fb286',
+                                },
+                                '&:disabled': {
+                                    backgroundColor: '#1a1a1a',
+                                    color: 'rgba(255, 255, 255, 0.3)',
                                 },
                             }}
                         >
@@ -420,11 +453,16 @@ export default function EditPlaylistModal() {
                             variant="contained"
                             startIcon={<RedoIcon />}
                             onClick={handleRedo}
+                            disabled={!tpsRef.current.hasTransactionToDo()}
                             sx={{ 
                                 ml: 1,
                                 backgroundColor: '#285238',
                                 '&:hover': {
                                     backgroundColor: '#4fb286',
+                                },
+                                '&:disabled': {
+                                    backgroundColor: '#1a1a1a',
+                                    color: 'rgba(255, 255, 255, 0.3)',
                                 },
                             }}
                         >

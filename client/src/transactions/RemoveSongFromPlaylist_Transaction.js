@@ -1,18 +1,18 @@
 import { jsTPS_Transaction } from "jstps"
 
 export default class RemoveSongFromPlaylist_Transaction extends jsTPS_Transaction {
-    constructor(initStore, initSong) {
+    constructor(initStore, initSongId) {
         super();
         this.store = initStore;
-        this.song = initSong;
+        this.song = initSongId;
     }
 
-    executeDo() {
-        this.store.removeSongFromPlaylist(this.song.songId);
+    async executeDo() {
+        await this.store.removeSongFromPlaylist(this.song.songId);
     }
     
-    executeUndo() {
-        this.store.addSongToPlaylist(this.song);
+    async executeUndo() {
+        await this.store.addSongToPlaylist(this.song.songId);
     }
 
 }
