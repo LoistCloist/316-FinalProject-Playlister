@@ -180,13 +180,14 @@ export default function EditPlaylistModal() {
         }
     };
 
-    const handleCancel = () => {
+    const handleCancel = async () => {
         if (playlistStore?.hideModals) {
             playlistStore.hideModals();
         }
         setPlaylistName('');
         setSongs([]);
         tpsRef.current = new jsTPS();
+        await playlistStore.loadUserPlaylists();
     };
 
     const handleConfirm = async () => {
@@ -197,7 +198,6 @@ export default function EditPlaylistModal() {
             if (playlistStore?.savePlaylistChanges) {
                 await playlistStore.savePlaylistChanges(playlistName, songs);
                 handleCancel();
-                await playlistStore.loadUserPlaylists();
             } else {
                 alert('Save playlist functionality not available');
             }
