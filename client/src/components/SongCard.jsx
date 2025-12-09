@@ -33,6 +33,13 @@ export default function SongCard({ song, onPlay }) {
         playlist => auth.loggedIn && auth.user && playlist.userId === auth.user.userId
     ) || [];
     
+    // Load user playlists when component mounts if logged in
+    useEffect(() => {
+        if (auth.loggedIn && auth.user?.userId && playlistStore?.loadUserPlaylists) {
+            playlistStore.loadUserPlaylists();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [auth.loggedIn, auth.user?.userId]);
     
     const handleClick = (event) => {
         event.stopPropagation();
@@ -79,15 +86,29 @@ export default function SongCard({ song, onPlay }) {
         // Clear any pending close timeout
         if (closeTimeoutRef.current) {
             clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
         }
         setPlaylistMenuAnchor(null);
     }
     
-    const handlePlaylistMenuItemLeave = () => {
+    const handlePlaylistMenuItemLeave = (event) => {
+        const relatedTarget = event?.relatedTarget;
+        // Check if mouse is moving to backdrop (which happens when nested menu opens) or nested menu
+        if (relatedTarget) {
+            const isBackdrop = relatedTarget.classList?.contains('MuiBackdrop-root') || 
+                              relatedTarget.closest?.('.MuiBackdrop-root');
+            const isNestedMenu = relatedTarget.closest?.('[role="menu"]') ||
+                                relatedTarget.closest?.('.MuiMenu-root');
+            
+            if (isBackdrop || isNestedMenu) {
+                return; // Don't close if moving to backdrop or nested menu
+            }
+        }
+        
         // Add a small delay before closing to allow mouse to move to nested menu
         closeTimeoutRef.current = setTimeout(() => {
             handlePlaylistMenuClose();
-        }, 150);
+        }, 200);
     }
     
     const handleNestedMenuEnter = () => {
@@ -238,7 +259,20 @@ export default function SongCard({ song, onPlay }) {
                     }}
                     MenuListProps={{
                         onMouseEnter: handleNestedMenuEnter,
-                        onMouseLeave: handlePlaylistMenuClose
+                        onMouseLeave: (e) => {
+                            // Only close if not moving to backdrop or parent menu item
+                            const relatedTarget = e.relatedTarget;
+                            if (relatedTarget) {
+                                const isBackdrop = relatedTarget.classList?.contains('MuiBackdrop-root') ||
+                                                  relatedTarget.closest?.('.MuiBackdrop-root');
+                                const isParentMenuItem = relatedTarget.closest?.('[role="menuitem"]');
+                                
+                                if (isBackdrop || isParentMenuItem) {
+                                    return; // Don't close if moving to backdrop or parent menu
+                                }
+                            }
+                            handlePlaylistMenuClose();
+                        }
                     }}
                     anchorOrigin={{
                         vertical: 'top',
