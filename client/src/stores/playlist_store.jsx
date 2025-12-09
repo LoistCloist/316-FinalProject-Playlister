@@ -314,14 +314,25 @@ function PlaylistStoreContextProvider(props) {
 
     const sortPlaylists = function(sortBy, sortOrder) {
         const sortedPlaylists = [...playlistStore.playlists].sort((a, b) => {
-            let aValue = a[sortBy];
-            let bValue = b[sortBy];
+            let aValue, bValue;
+            
+            if (sortBy === 'listenerCount') {
+                aValue = a.listeners ? a.listeners.length : 0;
+                bValue = b.listeners ? b.listeners.length : 0;
+            } else {
+                aValue = a[sortBy];
+                bValue = b[sortBy];
+            }
             
             // Handle string comparison
             if (typeof aValue === 'string') {
                 aValue = aValue.toLowerCase();
                 bValue = bValue.toLowerCase();
             }
+            
+            // Handle null/undefined values
+            if (aValue == null) aValue = '';
+            if (bValue == null) bValue = '';
             
             // Compare values
             let comparison = 0;
