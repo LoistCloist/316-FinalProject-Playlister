@@ -53,6 +53,9 @@ export const addSongToPlaylist = (playlistId, songId) => {
         songId: songId
     })
 }
+export const duplicatePlaylist = (playlistId) => {
+    return api.post(`/playlist/${playlistId}/duplicate`)
+}
 
 const apis = {
     createPlaylist,
@@ -63,7 +66,8 @@ const apis = {
     getAllPlaylists,
     updatePlaylist,
     addListener,
-    addSongToPlaylist
+    addSongToPlaylist,
+    duplicatePlaylist
 }
 
 export default apis;

@@ -12,5 +12,6 @@ router.get('/allplaylists', PlaylistController.getAllPlaylists) // Public - gues
 router.put('/playlist/:id', auth.verify, PlaylistController.updatePlaylist)
 router.post('/playlist/:id/listener', PlaylistController.addListener) // Public - guests and users can add themselves as listeners
 router.post('/playlist/:id/song', PlaylistController.addSongToPlaylist) // Public - anyone can add a song to a playlist
+router.post('/playlist/:id/duplicate', auth.verify, PlaylistController.duplicatePlaylist) // Requires auth - duplicate a playlist
 
 module.exports = router
