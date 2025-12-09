@@ -19,6 +19,15 @@ function WelcomeScreen() {
             }}
         >
             <Typography variant="h2" color="textLight"> The Playlister </Typography>
+            <Typography 
+                sx={{ 
+                    fontSize: '120px', 
+                    lineHeight: 1,
+                    textAlign: 'center'
+                }}
+            >
+                ♫
+            </Typography>
             <Stack direction="row" spacing={2} justifyContent="center">
                 {!auth.loggedIn && (
                     <>
