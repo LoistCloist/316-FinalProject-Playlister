@@ -113,7 +113,10 @@ getPlaylists = async (req, res) => {
         songQuery.artist = { $regex: artist, $options: 'i' };
     }
     if (year) {
-        songQuery.year = { $regex: year, $options: 'i' };
+        const yearNumber = parseInt(year, 10);
+        if (!isNaN(yearNumber)) {
+            songQuery.year = yearNumber;
+        }
     }
     
     // Build playlist query
