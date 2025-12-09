@@ -54,12 +54,18 @@ function AppBanner() {
                         ]} 
                     />
                 )}
-                <Typography component="h2" sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                }}>
-                    Playlister
+                <Typography 
+                    component="h2" 
+                    variant="h5"
+                    sx={{
+                        flex: 1,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        textAlign: 'center',
+                    }}
+                >
+                    The Playlister
                 </Typography>
                 <Box id="ProfileMenu" sx={{ marginLeft: 'auto' }}> 
                     <IconButton id="avatar-button" size="small" onClick={handleMenuOpen}>
