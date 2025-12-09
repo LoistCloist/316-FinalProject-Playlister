@@ -1,0 +1,755 @@
+{
+	"info": {
+		"_postman_id": "29b3642e-a166-4cfe-a0ca-8fca1f76eb3a",
+		"name": "Playlister API",
+		"description": "Complete API collection for Playlister application",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "49512226",
+		"_collection_link": "https://afriendfrommyanmar-2124786.postman.co/workspace/anotha~ed3c5504-a68a-4807-aa9b-3531ecc51698/collection/49512226-29b3642e-a166-4cfe-a0ca-8fca1f76eb3a?action=share&source=collection_link&creator=49512226"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userName\": \"JohnDoe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"passwordVerify\": \"password123\",\n  \"avatar\": \"https://example.com/avatar.jpg\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/auth/registerUser",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"auth",
+								"registerUser"
+							]
+						},
+						"description": "Register a new user account"
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/auth/loginUser",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"auth",
+								"loginUser"
+							]
+						},
+						"description": "Login with email and password. Sets HTTP-only cookie for authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Logged In User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/auth/getLoggedIn",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"auth",
+								"getLoggedIn"
+							]
+						},
+						"description": "Get the currently logged in user from the session cookie"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/auth/logoutUser",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"auth",
+								"logoutUser"
+							]
+						},
+						"description": "Logout the current user and clear the session cookie"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Playlists",
+			"item": [
+				{
+					"name": "Create Playlist",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"playlistName\": \"My Favorite Songs\",\n  \"userName\": \"JohnDoe\",\n  \"email\": \"john@example.com\",\n  \"songs\": []\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/store/playlist",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"playlist"
+							]
+						},
+						"description": "Create a new playlist. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Playlist By Id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/playlist/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"playlist",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "e73eb8de-e9c1-470a-8501-f7726bfe6670",
+									"description": "Playlist ID"
+								}
+							]
+						},
+						"description": "Get a specific playlist by ID. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Playlists",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/userplaylist/:userid",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"userplaylist",
+								":userid"
+							],
+							"variable": [
+								{
+									"key": "userid",
+									"value": "7ac63193-d41d-4009-adb9-bece8a0b13e1",
+									"description": "User ID"
+								}
+							]
+						},
+						"description": "Get all playlists for a specific user. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Search Playlists",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/playlist/search?playlistName=Favorite&userName=John&title=Bohemian&artist=Queen&year=1975",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"playlist",
+								"search"
+							],
+							"query": [
+								{
+									"key": "playlistName",
+									"value": "Favorite",
+									"description": "Filter by playlist name"
+								},
+								{
+									"key": "userName",
+									"value": "John",
+									"description": "Filter by user name"
+								},
+								{
+									"key": "title",
+									"value": "Bohemian",
+									"description": "Filter by song title"
+								},
+								{
+									"key": "artist",
+									"value": "Queen",
+									"description": "Filter by song artist"
+								},
+								{
+									"key": "year",
+									"value": "1975",
+									"description": "Filter by song year (number)"
+								}
+							]
+						},
+						"description": "Search playlists with filters. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Playlists",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/allplaylists",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"allplaylists"
+							]
+						},
+						"description": "Get all playlists. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Playlist",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"playlistName\": \"Updated Playlist Name\",\n  \"ownerEmail\": \"john@example.com\",\n  \"songs\": [\"song-id-1\", \"song-id-2\", \"song-id-4\", \"song-id-5\"]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/store/playlist/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"playlist",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1519315e-a3fb-4d0f-9a5d-556fbef3982c",
+									"description": "Playlist ID"
+								}
+							]
+						},
+						"description": "Update a playlist. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Playlist By Id",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/playlist/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"playlist",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1519315e-a3fb-4d0f-9a5d-556fbef3982c",
+									"description": "Playlist ID"
+								}
+							]
+						},
+						"description": "Delete a playlist by ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Listener to Playlist",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"user-uuid-here\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/store/playlist/:id/listener",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"playlist",
+								":id",
+								"listener"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "e73eb8de-e9c1-470a-8501-f7726bfe6670",
+									"description": "Playlist ID"
+								}
+							]
+						},
+						"description": "Add a user as a listener to a playlist. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Song to Playlist",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"songId\": \"50981f04-6c8c-4fc8-b5de-8995e808b8a8\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/store/playlist/:id/song",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"playlist",
+								":id",
+								"song"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "e73eb8de-e9c1-470a-8501-f7726bfe6670",
+									"description": "Playlist ID"
+								}
+							]
+						},
+						"description": "Add a song to a playlist. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Duplicate Playlist",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/playlist/:id/duplicate",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"playlist",
+								":id",
+								"duplicate"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "e73eb8de-e9c1-470a-8501-f7726bfe6670",
+									"description": "Playlist ID to duplicate"
+								}
+							]
+						},
+						"description": "Duplicate a playlist. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Songs",
+			"item": [
+				{
+					"name": "Create Song",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Bohemian Rhapsody\",\n  \"artist\": \"Queen\",\n  \"year\": 1975,\n  \"youtubeId\": \"fJ9rUzIMcZQ\",\n  \"ownerEmail\": \"john@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/store/songs",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"songs"
+							]
+						},
+						"description": "Create a new song. Year must be a number between 0-9999. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Search Songs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/songs?title=Bohemian Rhapsody&artist=Queen&year=1975",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"songs"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "Bohemian Rhapsody",
+									"description": "Filter by song title"
+								},
+								{
+									"key": "artist",
+									"value": "Queen",
+									"description": "Filter by artist"
+								},
+								{
+									"key": "year",
+									"value": "1975",
+									"description": "Filter by year (number)"
+								}
+							]
+						},
+						"description": "Search songs with filters. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Song By Id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/songs/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"songs",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "50981f04-6c8c-4fc8-b5de-8995e808b8a8",
+									"description": "Song ID"
+								}
+							]
+						},
+						"description": "Get a specific song by ID. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Song By Id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Bohemian Rhapsody (Remastered)\",\n  \"artist\": \"Queen\",\n  \"year\": 1975,\n  \"youtubeId\": \"fJ9rUzIMcZQ\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/store/songs/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"songs",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "50981f04-6c8c-4fc8-b5de-8995e808b8a8",
+									"description": "Song ID"
+								}
+							]
+						},
+						"description": "Edit a song. Year must be a number between 0-9999. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Songs In Playlist",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/songs/playlist/:playlistId",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"songs",
+								"playlist",
+								":playlistId"
+							],
+							"variable": [
+								{
+									"key": "playlistId",
+									"value": "e73eb8de-e9c1-470a-8501-f7726bfe6670",
+									"description": "Playlist ID"
+								}
+							]
+						},
+						"description": "Get all songs in a specific playlist. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Songs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/userSongs/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"userSongs",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "7ac63193-d41d-4009-adb9-bece8a0b13e1",
+									"description": "User ID"
+								}
+							]
+						},
+						"description": "Get all songs created by a specific user. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Song By Id",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/songs/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"songs",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "50981f04-6c8c-4fc8-b5de-8995e808b8a8",
+									"description": "Song ID"
+								}
+							]
+						},
+						"description": "Delete a song. You can only delete songs you created. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Increment Listen Count",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/store/songs/:id/listen",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"store",
+								"songs",
+								":id",
+								"listen"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "bed52c30-eb83-495c-910c-73fbe35cd4e5",
+									"description": "Song ID"
+								}
+							]
+						},
+						"description": "Increment the listen count for a song. Public endpoint."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
