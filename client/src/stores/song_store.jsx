@@ -1,9 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { jsTPS, TRANSACTION_STACK_EXCEPTION } from "jstps"
 import AuthContext from '../auth'
 import songRequestSender from './requests/songRequestSender'
-import DuplicateSongInPlaylist_Transaction from '../transactions/DuplicateSongInPlaylist_Transaction'
-import RemoveSongFromPlaylist_Transaction from '../transactions/RemoveSongFromPlaylist_Transaction'
 
 const SongStoreContext = createContext({});
 console.log("created SongStoreContext");
@@ -18,8 +15,6 @@ const SongStoreActionType = {
     MARK_SONG_FOR_DELETION: "MARK_SONG_FOR_DELETION",
     UPDATE_SONG_IN_LIST: "UPDATE_SONG_IN_LIST",
 }
-
-const tps = new jsTPS();
 
 const CurrentModal = {
     NONE: "NONE",
@@ -161,40 +156,6 @@ function SongStoreContextProvider(props) {
             type: SongStoreActionType.SORT_SONGS,
             payload: { songs: sortedSongs }
         });
-    }
-
-    const undo = function() {
-        try {
-            if (tps.hasTransactionToUndo()) {
-                tps.undoTransaction();
-            } else {
-                console.warn('[SONG STORE] No transactions to undo');
-            }
-        } catch (error) {
-            if (error === TRANSACTION_STACK_EXCEPTION) {
-                console.warn('[SONG STORE] No transactions to undo (caught exception)');
-            } else {
-                console.error('[SONG STORE] Error undoing transaction:', error);
-                throw error;
-            }
-        }
-    }
-
-    const redo = function() {
-        try {
-            if (tps.hasTransactionToDo()) {
-                tps.doTransaction();
-            } else {
-                console.warn('[SONG STORE] No transactions to redo');
-            }
-        } catch (error) {
-            if (error === TRANSACTION_STACK_EXCEPTION) {
-                console.warn('[SONG STORE] No transactions to redo (caught exception)');
-            } else {
-                console.error('[SONG STORE] Error redoing transaction:', error);
-                throw error;
-            }
-        }
     }
 
     const canAddNewSong = function() {
@@ -388,26 +349,6 @@ function SongStoreContextProvider(props) {
         }
     }
 
-    const addDuplicateSongInPlaylistTransaction = function(songId) {
-        try {
-            let transaction = new DuplicateSongInPlaylist_Transaction(this, songId);
-            tps.processTransaction(transaction);
-        } catch (error) {
-            console.error('[SONG STORE] Error adding duplicate song transaction:', error);
-            throw error;
-        }
-    }
-    const addRemoveSongFromPlaylistTransaction = function(song) {
-        try {
-            let transaction = new RemoveSongFromPlaylist_Transaction(this, song);
-            tps.processTransaction(transaction);
-        } catch (error) {
-            console.error('[SONG STORE] Error adding remove song transaction:', error);
-            throw error;
-        }
-    }
-
-    // Combine state and methods without mutating the state object
     const songStoreWithMethods = {
         ...songStore,
         addSongToCatalog,
@@ -417,15 +358,11 @@ function SongStoreContextProvider(props) {
         updateSongsArray,
         updateSongInList,
         sortSongs,
-        undo,
-        redo,
         canAddNewSong,
         loadUserSongs,
         searchSongs,
         markSongForDeletion,
-        deleteSong,
-        addDuplicateSongInPlaylistTransaction,
-        addRemoveSongFromPlaylistTransaction
+        deleteSong
     };
 
     return (

@@ -1,10 +1,7 @@
 import { createContext, useContext, useState, useRef } from 'react'
-import { jsTPS, TRANSACTION_STACK_EXCEPTION } from "jstps"
 import AuthContext from '../auth'
 import playlistRequestSender from './requests/playlistRequestSender'
 import songRequestSender from './requests/songRequestSender'
-import DuplicateSongInPlaylist_Transaction from '../transactions/DuplicateSongInPlaylist_Transaction'
-import RemoveSongFromPlaylist_Transaction from '../transactions/RemoveSongFromPlaylist_Transaction'
 
 const PlaylistStoreContext = createContext({});
 console.log("created PlaylistStoreContext");
@@ -24,8 +21,6 @@ const PlaylistStoreActionType = {
     GET_ALL_PLAYLISTS: "GET_ALL_PLAYLISTS",
     UPDATE_PLAYLIST_IN_LIST: "UPDATE_PLAYLIST_IN_LIST",
 }
-
-const tps = new jsTPS();
 
 const CurrentModal = {
     NONE: "NONE",
@@ -504,58 +499,6 @@ function PlaylistStoreContextProvider(props) {
         }
     }
 
-    const undo = function() {
-        try {
-            if (tps.hasTransactionToUndo()) {
-                tps.undoTransaction();
-            } else {
-                console.warn('[PLAYLIST STORE] No transactions to undo');
-            }
-        } catch (error) {
-            if (error === TRANSACTION_STACK_EXCEPTION) {
-                console.warn('[PLAYLIST STORE] No transactions to undo (caught exception)');
-            } else {
-                console.error('[PLAYLIST STORE] Error undoing transaction:', error);
-                throw error;
-            }
-        }
-    }
-
-    const redo = function() {
-        try {
-            if (tps.hasTransactionToDo()) {
-                tps.doTransaction();
-            } else {
-                console.warn('[PLAYLIST STORE] No transactions to redo');
-            }
-        } catch (error) {
-            if (error === TRANSACTION_STACK_EXCEPTION) {
-                console.warn('[PLAYLIST STORE] No transactions to redo (caught exception)');
-            } else {
-                console.error('[PLAYLIST STORE] Error redoing transaction:', error);
-                throw error;
-            }
-        }
-    }
-    const addDuplicateSongInPlaylistTransaction = function(songId) {
-        try {
-            let transaction = new DuplicateSongInPlaylist_Transaction(this, songId);
-            tps.processTransaction(transaction);
-        } catch (error) {
-            console.error('[PLAYLIST STORE] Error adding duplicate song transaction:', error);
-            throw error;
-        }
-    }
-    const addRemoveSongFromPlaylistTransaction = function(song) {
-        try {
-            let transaction = new RemoveSongFromPlaylist_Transaction(this, song);
-            tps.processTransaction(transaction);
-        } catch (error) {
-            console.error('[PLAYLIST STORE] Error adding remove song transaction:', error);
-            throw error;
-        }
-    }
-
     const setCurrentListSongs = function(songs) {
         playlistStoreReducer({
             type: PlaylistStoreActionType.SET_CURRENT_LIST_SONGS,
@@ -598,7 +541,6 @@ function PlaylistStoreContextProvider(props) {
                     type: PlaylistStoreActionType.REMOVE_SONG_FROM_PLAYLIST,
                     payload: { songId: song.songId }
                 });
-                addRemoveSongFromPlaylistTransaction(song);
             } else {
                 console.error('Failed to fetch song by ID:', songId);
                 throw new Error('Failed to fetch song');
@@ -634,7 +576,6 @@ function PlaylistStoreContextProvider(props) {
             
             if (response.status === 200 && response.data.success && response.data.song) {
                 const newSong = response.data.song;
-                addDuplicateSongInPlaylistTransaction(newSong.songId);
                 return newSong;
             } else {
                 throw new Error('Failed to create duplicate song');
@@ -728,10 +669,6 @@ function PlaylistStoreContextProvider(props) {
         getAllPlaylists,
         loadUserPlaylists,
         searchPlaylists,
-        undo,
-        redo,
-        addDuplicateSongInPlaylistTransaction,
-        addRemoveSongFromPlaylistTransaction,
         setCurrentListSongs,
         setCurrentListName,
         addSongToPlaylist,
