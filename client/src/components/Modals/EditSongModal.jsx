@@ -36,7 +36,7 @@ export default function EditSongModal() {
         if (isOpen && currentSong) {
             setTitle(currentSong.title || '');
             setArtist(currentSong.artist || '');
-            setYear(currentSong.year || '');
+            setYear(currentSong.year !== undefined && currentSong.year !== null ? String(currentSong.year) : '');
             setYoutubeId(currentSong.youtubeId || '');
         }
     }, [isOpen, currentSong]);
@@ -48,8 +48,15 @@ export default function EditSongModal() {
         }
 
         // Validate required fields
-        if (!title.trim() || !artist.trim() || !year.trim() || !youtubeId.trim()) {
-            alert('All fields are required');
+        if (!title.trim() || !artist.trim() || !youtubeId.trim()) {
+            alert('Title, Artist, and YouTube ID are required');
+            return;
+        }
+
+        // Validate year is a number
+        const yearNumber = parseInt(year.trim(), 10);
+        if (!year.trim() || isNaN(yearNumber) || yearNumber < 0 || yearNumber > 9999) {
+            alert('Year must be a valid number between 0 and 9999');
             return;
         }
 
@@ -60,7 +67,7 @@ export default function EditSongModal() {
                     currentSong.songId,
                     title,
                     artist,
-                    year,
+                    yearNumber,
                     youtubeId
                 );
                 if (success) {
@@ -218,10 +225,17 @@ export default function EditSongModal() {
                     />
                     <TextField
                         label="Year"
+                        type="number"
+                        inputProps={{ min: 0, max: 9999, step: 1 }}
                         variant="outlined"
                         fullWidth
                         value={year}
-                        onChange={(e) => setYear(e.target.value)}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || (!isNaN(value) && parseInt(value, 10) >= 0 && parseInt(value, 10) <= 9999)) {
+                                setYear(value);
+                            }
+                        }}
                         sx={{
                             '& .MuiOutlinedInput-root': {
                                 '& fieldset': {

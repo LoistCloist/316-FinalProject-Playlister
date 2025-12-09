@@ -45,8 +45,15 @@ export default function AddSongToCatalogModal() {
 
     const handleConfirm = async () => {
         // Validate required fields
-        if (!title.trim() || !artist.trim() || !year.trim() || !youtubeId.trim()) {
-            alert('All fields are required');
+        if (!title.trim() || !artist.trim() || !youtubeId.trim()) {
+            alert('Title, Artist, and YouTube ID are required');
+            return;
+        }
+
+        // Validate year is a number
+        const yearNumber = parseInt(year.trim(), 10);
+        if (!year.trim() || isNaN(yearNumber) || yearNumber < 0 || yearNumber > 9999) {
+            alert('Year must be a valid number between 0 and 9999');
             return;
         }
 
@@ -61,7 +68,7 @@ export default function AddSongToCatalogModal() {
             const response = await songRequestSender.createSong(
                 title.trim(),
                 artist.trim(),
-                year.trim(),
+                yearNumber,
                 youtubeId.trim(),
                 auth.user.email
             );
@@ -74,6 +81,7 @@ export default function AddSongToCatalogModal() {
                 // Small delay to ensure store updates before closing
                 await new Promise(resolve => setTimeout(resolve, 100));
                 handleCancel();
+                await songStore.loadUserSongs();
             } else {
                 console.error('Failed to create song:', response.data);
                 alert('Failed to create song');
@@ -226,10 +234,17 @@ export default function AddSongToCatalogModal() {
                     />
                     <TextField
                         label="Year"
+                        type="number"
+                        inputProps={{ min: 0, max: 9999, step: 1 }}
                         variant="outlined"
                         fullWidth
                         value={year}
-                        onChange={(e) => setYear(e.target.value)}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || (!isNaN(value) && parseInt(value, 10) >= 0 && parseInt(value, 10) <= 9999)) {
+                                setYear(value);
+                            }
+                        }}
                         sx={{
                             '& .MuiOutlinedInput-root': {
                                 '& fieldset': {

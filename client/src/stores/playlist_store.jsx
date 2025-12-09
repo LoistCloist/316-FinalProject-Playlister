@@ -639,10 +639,11 @@ function PlaylistStoreContextProvider(props) {
             const newTitle = `${baseTitle} ${newCount}`;
             
             // Deep clone the song and create a new song entry in the database
+            const yearValue = song.year !== undefined && song.year !== null ? (typeof song.year === 'number' ? song.year : parseInt(song.year, 10)) : 0;
             const response = await songRequestSender.createSong(
                 newTitle,
                 song.artist || '',
-                song.year || '',
+                yearValue,
                 song.youtubeId || '',
                 auth.user.email
             );
@@ -673,10 +674,11 @@ function PlaylistStoreContextProvider(props) {
             const processedSongs = await Promise.all(songs.map(async (song) => {
                 // Check if this is a duplicated song with a temporary ID
                 if (song.songId && song.songId.startsWith('temp-')) {
+                    const yearValue = song.year !== undefined && song.year !== null ? (typeof song.year === 'number' ? song.year : parseInt(song.year, 10)) : 0;
                     const response = await songRequestSender.createSong(
                         song.title || 'Untitled',
                         song.artist || '',
-                        song.year || '',
+                        yearValue,
                         song.youtubeId || '',
                         auth.user.email
                     );

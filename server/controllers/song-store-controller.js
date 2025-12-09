@@ -14,11 +14,19 @@ createSong = async (req, res) => {
         })
     }
     const { title, artist, year, youtubeId, ownerEmail } = req.body
-    if (!title || !artist || !year || !youtubeId || !ownerEmail ) {
+    if (!title || !artist || year === undefined || year === null || !youtubeId || !ownerEmail ) {
         return res.status(400).json({
             errorMessage: 'Missing fields'
         })
     }
+    
+    const yearNumber = parseInt(year, 10);
+    if (isNaN(yearNumber) || yearNumber < 0 || yearNumber > 9999) {
+        return res.status(400).json({
+            errorMessage: 'Year must be a valid number between 0 and 9999'
+        })
+    }
+    
     const songId = randomUUID();
     const mongooseUserId = auth.verifyUser(req);
     try {
@@ -33,7 +41,7 @@ createSong = async (req, res) => {
             songId: songId,
             title: title,
             artist: artist,
-            year: year,
+            year: yearNumber,
             youtubeId: youtubeId,
             listens: 0,
             inPlaylists: [],
@@ -64,7 +72,10 @@ getTargetSongs = async (req, res) => {
         query.artist = { $regex: artist, $options: 'i' }; 
     }
     if (year) {
-        query.year = { $regex: year, $options: 'i' };
+        const yearNumber = parseInt(year, 10);
+        if (!isNaN(yearNumber)) {
+            query.year = yearNumber;
+        }
     }
     
     const songs = await Song.find(query);
@@ -92,9 +103,17 @@ editSongById = async (req, res) => {
         })
     }
     const { title, artist, year, youtubeId } = req.body;
-    if (!title || !artist || !year || !youtubeId) {
+    if (!title || !artist || year === undefined || year === null || !youtubeId) {
         return res.status(400).json({ errorMessage: "Required fields not added. "});
     }
+    
+    const yearNumber = parseInt(year, 10);
+    if (isNaN(yearNumber) || yearNumber < 0 || yearNumber > 9999) {
+        return res.status(400).json({
+            errorMessage: 'Year must be a valid number between 0 and 9999'
+        })
+    }
+    
     // get song by Id
     const song = await Song.findOne({ songId: req.params.id });
     if (!song) {
@@ -102,7 +121,7 @@ editSongById = async (req, res) => {
     }
     song.title = title;
     song.artist = artist;
-    song.year = year;
+    song.year = yearNumber;
     song.youtubeId = youtubeId;
     try {
         await song.save();

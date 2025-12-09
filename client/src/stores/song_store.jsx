@@ -114,6 +114,7 @@ function SongStoreContextProvider(props) {
             type: SongStoreActionType.ADD_SONG_TO_CATALOG,
             payload: { currentSong: { id, name: newName } }
         });
+        
     }
 
     const hideModals = function() {
@@ -140,6 +141,10 @@ function SongStoreContextProvider(props) {
                 aValue = aValue.toLowerCase();
                 bValue = bValue.toLowerCase();
             }
+            
+            // Handle null/undefined values
+            if (aValue == null) aValue = '';
+            if (bValue == null) bValue = '';
             
             // Compare values
             let comparison = 0;
@@ -305,8 +310,15 @@ function SongStoreContextProvider(props) {
         }
 
         // Validate required fields
-        if (!title.trim() || !artist.trim() || !year.trim() || !youtubeId.trim()) {
-            alert('All fields are required');
+        if (!title.trim() || !artist.trim() || youtubeId.trim()) {
+            alert('Title, Artist, and YouTube ID are required');
+            return false;
+        }
+
+        // Validate year is a number
+        const yearNumber = typeof year === 'number' ? year : parseInt(year, 10);
+        if (isNaN(yearNumber) || yearNumber < 0 || yearNumber > 9999) {
+            alert('Year must be a valid number between 0 and 9999');
             return false;
         }
 
@@ -316,7 +328,7 @@ function SongStoreContextProvider(props) {
                 songId,
                 title.trim(),
                 artist.trim(),
-                year.trim(),
+                yearNumber,
                 youtubeId.trim()
             );
             
@@ -328,7 +340,7 @@ function SongStoreContextProvider(props) {
                         ...updatedSong,
                         title: title.trim(),
                         artist: artist.trim(),
-                        year: year.trim(),
+                        year: yearNumber,
                         youtubeId: youtubeId.trim()
                     };
                     storeReducer({
