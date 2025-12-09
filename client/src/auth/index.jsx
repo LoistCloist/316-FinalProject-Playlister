@@ -116,10 +116,8 @@ function AuthContextProvider(props) {
             const response = await authRequestSender.registerUser(userName, email, password, passwordVerify, avatar);   
             if (response.status === 200) {
                 console.log("Registered Sucessfully");
-                // Verify the cookie was set by calling getLoggedIn
-                await getLoggedIn();
-                // Navigate to home page since user is now logged in
-                navigate("/playlists");
+                // Don't log in automatically - redirect to login screen
+                navigate("/login");
             }
         } catch(error){
             authReducer({

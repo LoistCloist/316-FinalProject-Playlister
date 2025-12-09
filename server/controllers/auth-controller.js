@@ -179,26 +179,11 @@ registerUser = async (req, res) => {
         const savedUser = await newUser.save();
         console.log("new user saved - _id:", savedUser._id, "userId:", savedUser.userId);
 
-        // LOGIN THE USER - use MongoDB _id (document ID) for JWT token
-        const token = auth.signToken(savedUser._id);
-        console.log("token:" + token);
-
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: false, // Set to false for localhost (HTTP), true for production (HTTPS)
-            sameSite: "lax" // Use "lax" for localhost, "none" requires secure: true
-        }).status(200).json({
+        // Don't automatically log in the user - they need to log in separately
+        res.status(200).json({
             success: true,
-            user: {
-                userId: savedUser.userId, // UUID
-                userName: savedUser.userName,
-                email: savedUser.email,
-                avatar: savedUser.avatar,
-                playlists: savedUser.playlists
-            }
+            message: "Account created successfully. Please log in."
         })
-
-        console.log("token sent");
 
     } catch (err) {
         console.error(err);
