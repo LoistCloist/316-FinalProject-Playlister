@@ -9,6 +9,7 @@ import LockOutlineIcon from '@mui/icons-material/LockOutline';
 import { whiteTextFieldSx } from '../styles';
 import AuthContext from '../../auth';
 import { useContext } from 'react';
+import MUIErrorModal from '../Modals/MUIErrorModal';
 
 function LoginScreen() {
     const { auth } = useContext(AuthContext);
@@ -30,6 +31,7 @@ function LoginScreen() {
                 <TextField name="password" type="password" label="Password" variant="outlined" sx={whiteTextFieldSx} />
                 <Button type="submit">SIGN IN</Button>
             </Stack>
+            <MUIErrorModal />
         </>
     )
 }
